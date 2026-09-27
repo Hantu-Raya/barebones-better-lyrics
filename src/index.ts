@@ -2,7 +2,6 @@ import { INITIALIZE_LOG } from "@constants";
 import { AppState } from "@core/appState";
 import { injectI18nCssVars, loadLocaleOverride, subscribeToLocaleChanges } from "@core/i18n";
 import { purgeExpiredKeys, saveCacheInfo } from "@core/storage";
-import { prewarmAuthenticationToken } from "@modules/lyrics/providers/unified";
 import { initProviders } from "@modules/lyrics/providers/shared";
 import { setupRequestSniffer } from "@modules/lyrics/requestSniffer/requestSniffer";
 import {
@@ -35,7 +34,6 @@ import {
   setupHomepageFullscreenHandler,
   setupWakeLockForFullscreen,
 } from "@modules/ui/observer";
-import { subscribeToCustomStyles } from "@modules/ui/styleInjector";
 import { applyLoggingSetting } from "@modules/settings/settings";
 import { logCore } from "@core/logger";
 
@@ -64,7 +62,6 @@ async function modify(isDisposed: () => boolean): Promise<void> {
   loadLyricOffsetSettings();
   loadPassiveScrollSetting();
   loadDockSettings(hideDockOnIdleInFullscreen);
-  subscribeToCustomStyles();
   await purgeExpiredKeys();
   await saveCacheInfo();
   listenForPopupMessages();
@@ -73,7 +70,6 @@ async function modify(isDisposed: () => boolean): Promise<void> {
   disableInertWhenFullscreen();
   setupAltHoverHandler();
   initProviders();
-  prewarmAuthenticationToken();
   setUpAvButtonListener();
   logCore(
     INITIALIZE_LOG,

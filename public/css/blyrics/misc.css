@@ -2,8 +2,7 @@
    name, so it stays on this side of the renderer boundary. */
 :root,
 .blyrics--line,
-.blyrics--translated,
-.blyrics--romanized {
+.blyrics--translated {
 	--noto-sans-cjk: "Noto Sans HK", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", "Noto Sans TC";
 	--noto-sans-universal:
 		"Noto Sans", var(--noto-sans-cjk), "Noto Sans Arabic", "Noto Sans Armenian",
@@ -19,29 +18,29 @@
 }
 
 /* CJK web fonts are region-specific subsets: lang alone cannot replace their glyphs. */
-:where(.blyrics--line, .blyrics--translated, .blyrics--romanized):lang(ja) {
+:where(.blyrics--line, .blyrics--translated):lang(ja) {
 	--noto-sans-cjk: "Noto Sans JP", "Hiragino Sans", Meiryo;
 }
 
-:where(.blyrics--line, .blyrics--translated, .blyrics--romanized):lang(ko) {
+:where(.blyrics--line, .blyrics--translated):lang(ko) {
 	--noto-sans-cjk: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo";
 }
 
-:where(.blyrics--line, .blyrics--translated, .blyrics--romanized):lang(zh) {
+:where(.blyrics--line, .blyrics--translated):lang(zh) {
 	--noto-sans-cjk: "Noto Sans SC", "Microsoft YaHei", "PingFang SC";
 }
 
-:where(.blyrics--line, .blyrics--translated, .blyrics--romanized):is(:lang(zh-TW), :lang(zh-Hant)) {
+:where(.blyrics--line, .blyrics--translated):is(:lang(zh-TW), :lang(zh-Hant)) {
 	--noto-sans-cjk: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC";
 }
 
-:where(.blyrics--line, .blyrics--translated, .blyrics--romanized):is(
+:where(.blyrics--line, .blyrics--translated):is(
 	:lang(zh-HK), :lang(zh-MO), :lang(zh-Hant-HK), :lang(zh-Hant-MO), :lang(yue)
 ) {
 	--noto-sans-cjk: "Noto Sans HK", "PingFang HK", "Microsoft JhengHei";
 }
 
-:where(.blyrics--line, .blyrics--translated, .blyrics--romanized):is(:lang(zh-Hans), :lang(yue-Hans)) {
+:where(.blyrics--line, .blyrics--translated):is(:lang(zh-Hans), :lang(yue-Hans)) {
 	--noto-sans-cjk: "Noto Sans SC", "Microsoft YaHei", "PingFang SC";
 }
 

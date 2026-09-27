@@ -3,18 +3,13 @@
 import {
   DOCK_CONTROL_ORDER_DEFAULT,
   DOCK_DEFAULT_POSITION,
-  ROMANIZATION_LANGUAGES,
 } from "@constants";
 import { attachHoldRepeat } from "@core/holdRepeat";
 import { getLanguageDisplayName, initI18n, loadLocaleOverride, SUPPORTED_LOCALES, t } from "@core/i18n";
 import { clearAllOffsets, getOffsetInfo } from "@core/storage";
 import { parseSvgString, syncTypeColors } from "@modules/ui/lyricsDock/icons";
-import { migrateLetterWavePref, type LetterWavePref } from "@modules/settings/letterWave";
 import { mergePreferredProviders } from "@modules/lyrics/providers/providerList";
 import Sortable from "sortablejs";
-import { showModal } from "./editor/ui/feedback";
-import { initStoreUI, setupYourThemesButton } from "./store/store";
-import { checkForStableRelease } from "./updateNotice";
 
 interface Options {
   isLogsEnabled: boolean;
@@ -24,14 +19,11 @@ interface Options {
   isFullScreenDisabled: boolean;
   isFullscreenControlsEnabled: boolean;
   isStylizedAnimationsEnabled: boolean;
-  letterWavePref: LetterWavePref;
   isPassiveScrollEnabled: boolean;
   isTranslateEnabled: boolean;
   translationLanguage: string;
   isCursorAutoHideEnabled: boolean;
-  isRomanizationEnabled: boolean;
   preferredProviderList: string[];
-  romanizationDisabledLanguages: string[];
   translationDisabledLanguages: string[];
   uiLanguage: string;
   isControlsDockEnabled: boolean;
@@ -39,7 +31,6 @@ interface Options {
   isControlsDockAutoHideInFullscreenEnabled: boolean;
   isDockSourceEnabled: boolean;
   isDockTranslateEnabled: boolean;
-  isDockRomanizeEnabled: boolean;
   isDockOffsetEnabled: boolean;
   isDockRefreshEnabled: boolean;
   dockControlsOrder: string[];
@@ -81,14 +72,11 @@ const getOptionsFromForm = (): Options => {
     isFullScreenDisabled: (document.getElementById("isFullScreenDisabled") as HTMLInputElement).checked,
     isFullscreenControlsEnabled: (document.getElementById("isFullscreenControlsEnabled") as HTMLInputElement).checked,
     isStylizedAnimationsEnabled: (document.getElementById("isStylizedAnimationsEnabled") as HTMLInputElement).checked,
-    letterWavePref: getLetterWaveSwitchState(),
     isPassiveScrollEnabled: (document.getElementById("isPassiveScrollEnabled") as HTMLInputElement).checked,
     isTranslateEnabled: (document.getElementById("translate") as HTMLInputElement).checked,
     translationLanguage: (document.getElementById("translationLanguage") as HTMLInputElement).value,
     isCursorAutoHideEnabled: (document.getElementById("cursorAutoHide") as HTMLInputElement).checked,
-    isRomanizationEnabled: (document.getElementById("isRomanizationEnabled") as HTMLInputElement).checked,
     preferredProviderList: preferredProviderList,
-    romanizationDisabledLanguages: romanizationDisabledLanguages,
     translationDisabledLanguages: translationDisabledLanguages,
     uiLanguage: (document.getElementById("uiLanguage") as HTMLSelectElement).value,
     isControlsDockEnabled: (document.getElementById("isUnisonPinnedDockEnabled") as HTMLInputElement).checked,
@@ -98,7 +86,6 @@ const getOptionsFromForm = (): Options => {
     ).checked,
     isDockSourceEnabled: (document.getElementById("isDockSourceEnabled") as HTMLInputElement).checked,
     isDockTranslateEnabled: (document.getElementById("isDockTranslateEnabled") as HTMLInputElement).checked,
-    isDockRomanizeEnabled: (document.getElementById("isDockRomanizeEnabled") as HTMLInputElement).checked,
     isDockOffsetEnabled: (document.getElementById("isDockOffsetEnabled") as HTMLInputElement).checked,
     isDockRefreshEnabled: (document.getElementById("isDockRefreshEnabled") as HTMLInputElement).checked,
     dockControlsOrder: getDockControlsOrder(),
@@ -264,30 +251,15 @@ const restoreOptions = (): void => {
     isFullScreenDisabled: false,
     isFullscreenControlsEnabled: true,
     isStylizedAnimationsEnabled: true,
-    letterWavePref: "auto",
     isPassiveScrollEnabled: true,
     isTranslateEnabled: false,
     translationLanguage: "en",
-    isRomanizationEnabled: false,
     preferredProviderList: [
       "bLyrics-richsynced",
-      "unison-richsynced",
-      "binimum-richsynced",
-      "unison-wordsynced",
-      "portato-richsynced",
-      "musixmatch-richsync",
-      "yt-captions",
       "bLyrics-synced",
-      "unison-synced",
-      "binimum-synced",
       "lrclib-synced",
-      "legato-synced",
-      "musixmatch-synced",
       "yt-lyrics",
-      "unison-plain",
-      "lrclib-plain",
     ],
-    romanizationDisabledLanguages: [],
     translationDisabledLanguages: [],
     uiLanguage: "auto",
     isControlsDockEnabled: true,
@@ -295,7 +267,6 @@ const restoreOptions = (): void => {
     isControlsDockAutoHideInFullscreenEnabled: true,
     isDockSourceEnabled: true,
     isDockTranslateEnabled: true,
-    isDockRomanizeEnabled: true,
     isDockOffsetEnabled: true,
     isDockRefreshEnabled: false,
     dockControlsOrder: [...DOCK_CONTROL_ORDER_DEFAULT],
@@ -306,7 +277,6 @@ const restoreOptions = (): void => {
 
   const readKeys = [
     ...Object.keys(defaultOptions),
-    "isLetterWaveEnabled",
     "isUnisonPinnedDockEnabled",
     "unisonPinnedDockPosition",
     "isUnisonAutoHideInFullscreenEnabled",
@@ -316,7 +286,6 @@ const restoreOptions = (): void => {
     setOptionsInForm({
       ...defaultOptions,
       ...(raw as Options),
-      letterWavePref: migrateLetterWavePref(raw),
       isControlsDockEnabled:
         raw.isControlsDockEnabled ?? raw.isUnisonPinnedDockEnabled ?? defaultOptions.isControlsDockEnabled,
       controlsDockPosition:
@@ -345,11 +314,9 @@ const setOptionsInForm = (items: Options): void => {
     items.isFullscreenControlsEnabled;
   (document.getElementById("isStylizedAnimationsEnabled") as HTMLInputElement).checked =
     items.isStylizedAnimationsEnabled;
-  setLetterWaveSwitchState(items.letterWavePref);
   (document.getElementById("isPassiveScrollEnabled") as HTMLInputElement).checked = items.isPassiveScrollEnabled;
   (document.getElementById("translate") as HTMLInputElement).checked = items.isTranslateEnabled;
   (document.getElementById("translationLanguage") as HTMLInputElement).value = items.translationLanguage;
-  (document.getElementById("isRomanizationEnabled") as HTMLInputElement).checked = items.isRomanizationEnabled;
   (document.getElementById("uiLanguage") as HTMLSelectElement).value = items.uiLanguage;
   (document.getElementById("isUnisonPinnedDockEnabled") as HTMLInputElement).checked = items.isControlsDockEnabled;
   (document.getElementById("isUnisonAutoHideInFullscreenEnabled") as HTMLInputElement).checked =
@@ -357,7 +324,6 @@ const setOptionsInForm = (items: Options): void => {
   setUnisonPositionInForm(items.controlsDockPosition);
   (document.getElementById("isDockSourceEnabled") as HTMLInputElement).checked = items.isDockSourceEnabled;
   (document.getElementById("isDockTranslateEnabled") as HTMLInputElement).checked = items.isDockTranslateEnabled;
-  (document.getElementById("isDockRomanizeEnabled") as HTMLInputElement).checked = items.isDockRomanizeEnabled;
   (document.getElementById("isDockOffsetEnabled") as HTMLInputElement).checked = items.isDockOffsetEnabled;
   (document.getElementById("isDockRefreshEnabled") as HTMLInputElement).checked = items.isDockRefreshEnabled;
   setOffsetDisplay("globalLyricOffset", items.globalLyricOffset);
@@ -365,10 +331,8 @@ const setOptionsInForm = (items: Options): void => {
   setOffsetDisplay("lineOffsetTrim", items.lineOffsetTrim);
   setDockControlsOrderInForm(items.dockControlsOrder);
   syncUnisonModalDependentState(items.isControlsDockEnabled);
-  romanizationDisabledLanguages = items.romanizationDisabledLanguages || [];
   translationDisabledLanguages = items.translationDisabledLanguages || [];
   updateExclusionsConfigVisibility();
-  renderRomanizationLanguagePills();
   renderTranslationLanguagePills();
 
   const providersListElem = document.getElementById("providers-list")!;
@@ -376,21 +340,9 @@ const setOptionsInForm = (items: Options): void => {
 
   const defaultProviderOrder = [
     "bLyrics-richsynced",
-    "unison-richsynced",
-    "binimum-richsynced",
-    "unison-wordsynced",
-    "portato-richsynced",
-    "musixmatch-richsync",
-    "yt-captions",
     "bLyrics-synced",
-    "unison-synced",
-    "binimum-synced",
     "lrclib-synced",
-    "legato-synced",
-    "musixmatch-synced",
     "yt-lyrics",
-    "unison-plain",
-    "lrclib-plain",
   ];
 
   for (const providerId of mergePreferredProviders(items.preferredProviderList, defaultProviderOrder)) {
@@ -410,40 +362,10 @@ interface ProviderInfo {
 }
 
 const getProviderIdToInfoMap = (): { [key: string]: ProviderInfo } => ({
-  "binimum-richsynced": { name: t("options_provider_binilyrics"), syncType: "syllable" },
-  "binimum-synced": { name: t("options_provider_binilyrics"), syncType: "line" },
-  "musixmatch-richsync": {
-    name: t("options_provider_musixmatch"),
-    syncType: "word",
-  },
-  "musixmatch-synced": {
-    name: t("options_provider_musixmatch"),
-    syncType: "line",
-  },
-  "unison-richsynced": { name: t("options_provider_betterLyricsUnison"), syncType: "syllable" },
-  "unison-wordsynced": { name: t("options_provider_betterLyricsUnison"), syncType: "word" },
-  "unison-synced": { name: t("options_provider_betterLyricsUnison"), syncType: "line" },
-  "unison-plain": { name: t("options_provider_betterLyricsUnison"), syncType: "unsynced" },
-  "yt-captions": {
-    name: t("options_provider_youtubeCaptions"),
-    syncType: "line",
-  },
-  "portato-richsynced": { name: t("options_provider_betterLyricsPortato"), syncType: "word" },
+  "bLyrics-richsynced": { name: t("options_provider_betterLyrics"), syncType: "syllable" },
+  "bLyrics-synced": { name: t("options_provider_betterLyrics"), syncType: "line" },
   "lrclib-synced": { name: t("options_provider_lrclib"), syncType: "line" },
-  "bLyrics-richsynced": {
-    name: t("options_provider_betterLyrics"),
-    syncType: "syllable",
-  },
-  "bLyrics-synced": {
-    name: t("options_provider_betterLyrics"),
-    syncType: "line",
-  },
-  "legato-synced": {
-    name: t("options_provider_betterLyricsLegato"),
-    syncType: "line",
-  },
-  "yt-lyrics": { name: t("options_provider_youtube"), syncType: "unsynced" },
-  "lrclib-plain": { name: t("options_provider_lrclib"), syncType: "unsynced" },
+  "yt-lyrics": { name: t("options_provider_youtube"), syncType: "line" },
 });
 
 const getSyncTypeConfig = (): {
@@ -538,56 +460,6 @@ function createProviderElem(providerId: string, checked = true): HTMLLIElement |
   return liElem;
 }
 
-// -- Letter wave switch --------------------------
-
-const LETTER_WAVE_ORDER: LetterWavePref[] = ["off", "auto", "on"];
-
-const LETTER_WAVE_STATE_LABELS: Record<LetterWavePref, string> = {
-  off: "Off",
-  auto: "Auto",
-  on: "On",
-};
-
-function getLetterWaveSwitchState(): LetterWavePref {
-  const state = document.getElementById("letterWaveSwitch")?.dataset.state;
-  return state === "on" || state === "off" || state === "auto" ? state : "auto";
-}
-
-function setLetterWaveSwitchState(pref: LetterWavePref): void {
-  const el = document.getElementById("letterWaveSwitch");
-  if (!el) return;
-  el.dataset.state = pref;
-  el.setAttribute("aria-valuenow", String(LETTER_WAVE_ORDER.indexOf(pref)));
-  el.setAttribute("aria-valuetext", LETTER_WAVE_STATE_LABELS[pref]);
-}
-
-function initLetterWaveSwitch(): void {
-  const el = document.getElementById("letterWaveSwitch");
-  if (!el) return;
-
-  const step = (delta: number, wrap: boolean): void => {
-    const count = LETTER_WAVE_ORDER.length;
-    const current = LETTER_WAVE_ORDER.indexOf(getLetterWaveSwitchState());
-    const next = wrap ? (current + delta + count) % count : Math.min(count - 1, Math.max(0, current + delta));
-    setLetterWaveSwitchState(LETTER_WAVE_ORDER[next]);
-    saveOptions();
-  };
-
-  el.addEventListener("click", () => step(1, true));
-  el.addEventListener("keydown", event => {
-    if (event.key === "ArrowRight" || event.key === "ArrowUp") {
-      step(1, false);
-      event.preventDefault();
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
-      step(-1, false);
-      event.preventDefault();
-    } else if (event.key === " " || event.key === "Enter") {
-      step(1, true);
-      event.preventDefault();
-    }
-  });
-}
-
 // -- Display Language Dropdown --------------------------
 
 function populateLanguageDropdown(): void {
@@ -635,10 +507,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   populateLanguageDropdown();
   initTabScrollIndicators();
   initSettingHelpTooltips();
-  initLetterWaveSwitch();
   restoreOptions();
   restoreActiveTab();
-  checkForStableRelease();
 });
 document.querySelectorAll("#options input, #options select").forEach(element => {
   element.addEventListener("change", saveOptions);
@@ -740,59 +610,37 @@ document.addEventListener("DOMContentLoaded", () => {
     onUpdate: saveOptions,
   });
 
-  initStoreUI();
-  setupYourThemesButton();
   initLangExclusionsModal();
-
-  document.getElementById("browse-themes-btn")?.addEventListener("click", () => {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL("pages/marketplace.html"),
-    });
-  });
-
 });
 
 // -- Language Exclusions Modal --------------------------
 
-let romanizationDisabledLanguages: string[] = [];
 let translationDisabledLanguages: string[] = [];
-let activeExclusionTab: "romanization" | "translation" = "romanization";
 
 function updateExclusionsConfigVisibility(): void {
-  const romanizationToggle = document.getElementById("isRomanizationEnabled") as HTMLInputElement;
   const translateToggle = document.getElementById("translate") as HTMLInputElement;
-  const configContainer = document.getElementById("romanization-config-container");
+  const configContainer = document.getElementById("lang-exclusions-config-container");
   if (!configContainer) return;
 
-  const shouldShow = romanizationToggle?.checked || translateToggle?.checked;
-  configContainer.style.display = shouldShow ? "flex" : "none";
+  configContainer.style.display = translateToggle?.checked ? "flex" : "none";
 }
 
 function initLangExclusionsModal(): void {
-  const romanizationToggle = document.getElementById("isRomanizationEnabled") as HTMLInputElement;
   const translateToggle = document.getElementById("translate") as HTMLInputElement;
-  const configBtn = document.getElementById("romanization-config-btn");
+  const configBtn = document.getElementById("lang-exclusions-config-btn");
   const modalOverlay = document.getElementById("lang-exclusions-modal-overlay");
   const modalClose = document.getElementById("lang-exclusions-modal-close");
-  const romanizationSearchInput = document.getElementById("romanization-search") as HTMLInputElement;
   const translationSearchInput = document.getElementById("translation-search") as HTMLInputElement;
   const resetBtn = document.getElementById("lang-exclusions-reset-btn");
-  const tabButtons = modalOverlay?.querySelectorAll(".modal-tab");
 
   if (!configBtn || !modalOverlay) return;
 
-  romanizationToggle?.addEventListener("change", updateExclusionsConfigVisibility);
   translateToggle?.addEventListener("change", updateExclusionsConfigVisibility);
 
   configBtn.addEventListener("click", () => {
     modalOverlay.classList.add("active");
-    const tabName = t(activeExclusionTab === "romanization" ? "options_romanization_tab" : "options_translation_tab");
-    if (resetBtn) resetBtn.textContent = t("options_resetToDefault", tabName);
-    if (activeExclusionTab === "romanization") {
-      romanizationSearchInput?.focus();
-    } else {
-      translationSearchInput?.focus();
-    }
+    if (resetBtn) resetBtn.textContent = t("options_resetToDefault", t("options_translation_tab"));
+    translationSearchInput?.focus();
   });
 
   modalClose?.addEventListener("click", closeLangExclusionsModal);
@@ -809,119 +657,34 @@ function initLangExclusionsModal(): void {
     }
   });
 
-  // Tab switching
-  tabButtons?.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const tab = (btn as HTMLElement).dataset.tab as "romanization" | "translation";
-      switchExclusionTab(tab);
-    });
-  });
-
-  romanizationSearchInput?.addEventListener("input", () => {
-    filterLanguagePills("romanization-pills-container", romanizationSearchInput.value);
-  });
-
   translationSearchInput?.addEventListener("input", () => {
     filterLanguagePills("translation-pills-container", translationSearchInput.value);
   });
 
-  resetBtn?.addEventListener("click", async () => {
-    const tabName =
-      activeExclusionTab === "romanization" ? t("options_romanization_tab") : t("options_translation_tab");
-    const result = await showModal({
-      title: t("options_romanization_resetTitle", tabName),
-      message: t("options_romanization_resetMessage"),
-      confirmText: t("options_reset"),
-      cancelText: t("options_cancel"),
-    });
-    if (result === null) return;
+  resetBtn?.addEventListener("click", () => {
+    const tabName = t("options_translation_tab");
+    const confirmed = window.confirm(
+      `${t("options_langExclusions_resetTitle", tabName)}\n\n${t("options_langExclusions_resetMessage")}`
+    );
+    if (!confirmed) return;
 
-    if (activeExclusionTab === "romanization") {
-      romanizationDisabledLanguages = [];
-      renderRomanizationLanguagePills();
-    } else {
-      translationDisabledLanguages = [];
-      renderTranslationLanguagePills();
-    }
+    translationDisabledLanguages = [];
+    renderTranslationLanguagePills();
     saveOptions();
     closeLangExclusionsModal();
-    showAlert(t("options_romanization_resetSuccess", tabName));
+    showAlert(t("options_langExclusions_resetSuccess", tabName));
   });
-}
-
-function switchExclusionTab(tab: "romanization" | "translation"): void {
-  activeExclusionTab = tab;
-
-  const tabButtons = document.querySelectorAll("#lang-exclusions-modal-overlay .modal-tab");
-  const tabContents = document.querySelectorAll(".lang-exclusions-tab-content");
-  const resetBtn = document.getElementById("lang-exclusions-reset-btn");
-
-  tabButtons.forEach(btn => {
-    const btnTab = (btn as HTMLElement).dataset.tab;
-    btn.classList.toggle("active", btnTab === tab);
-  });
-
-  tabContents.forEach(content => {
-    const contentId = content.id;
-    content.classList.toggle("active", contentId === `${tab}-tab-content`);
-  });
-
-  if (resetBtn) {
-    const tabName = t(tab === "romanization" ? "options_romanization_tab" : "options_translation_tab");
-    resetBtn.textContent = t("options_resetToDefault", tabName);
-  }
-
-  // Focus the search input of the active tab
-  const searchInput = document.getElementById(`${tab}-search`) as HTMLInputElement;
-  searchInput?.focus();
 }
 
 function closeLangExclusionsModal(): void {
   const modalOverlay = document.getElementById("lang-exclusions-modal-overlay");
-  const romanizationSearchInput = document.getElementById("romanization-search") as HTMLInputElement;
   const translationSearchInput = document.getElementById("translation-search") as HTMLInputElement;
 
   modalOverlay?.classList.remove("active");
 
-  if (romanizationSearchInput) {
-    romanizationSearchInput.value = "";
-    filterLanguagePills("romanization-pills-container", "");
-  }
   if (translationSearchInput) {
     translationSearchInput.value = "";
     filterLanguagePills("translation-pills-container", "");
-  }
-}
-
-let romanizationPillsDelegated = false;
-
-function renderRomanizationLanguagePills(): void {
-  const container = document.getElementById("romanization-pills-container");
-  if (!container) return;
-
-  if (!romanizationPillsDelegated) {
-    container.addEventListener("click", e => {
-      const pill = (e.target as HTMLElement).closest("[data-lang-code]") as HTMLElement | null;
-      if (pill?.dataset.langCode) {
-        toggleRomanizationLanguage(pill.dataset.langCode);
-      }
-    });
-    romanizationPillsDelegated = true;
-  }
-
-  container.replaceChildren();
-
-  for (const langCode of Object.keys(ROMANIZATION_LANGUAGES)) {
-    const langName = getLanguageDisplayName(langCode);
-    const isDisabled = romanizationDisabledLanguages.includes(langCode);
-
-    const pill = document.createElement("div");
-    pill.className = `lang-pill${isDisabled ? " disabled" : ""}`;
-    pill.dataset.langCode = langCode;
-    pill.dataset.langName = langName.toLowerCase();
-    pill.textContent = langName;
-
-    container.appendChild(pill);
   }
 }
 
@@ -963,17 +726,6 @@ function renderTranslationLanguagePills(): void {
 
     container.appendChild(pill);
   }
-}
-
-function toggleRomanizationLanguage(langCode: string): void {
-  const index = romanizationDisabledLanguages.indexOf(langCode);
-  if (index === -1) {
-    romanizationDisabledLanguages.push(langCode);
-  } else {
-    romanizationDisabledLanguages.splice(index, 1);
-  }
-  saveOptions();
-  renderRomanizationLanguagePills();
 }
 
 function toggleTranslationLanguage(langCode: string): void {
@@ -1025,7 +777,6 @@ function resetDockSettings(): void {
   (document.getElementById("isUnisonAutoHideInFullscreenEnabled") as HTMLInputElement).checked = true;
   (document.getElementById("isDockSourceEnabled") as HTMLInputElement).checked = true;
   (document.getElementById("isDockTranslateEnabled") as HTMLInputElement).checked = true;
-  (document.getElementById("isDockRomanizeEnabled") as HTMLInputElement).checked = true;
   (document.getElementById("isDockOffsetEnabled") as HTMLInputElement).checked = true;
   (document.getElementById("isDockRefreshEnabled") as HTMLInputElement).checked = false;
   setUnisonPositionInForm(DOCK_DEFAULT_POSITION);
@@ -1074,7 +825,6 @@ function setupUnisonActionsModal(): void {
   for (const id of [
     "isDockSourceEnabled",
     "isDockTranslateEnabled",
-    "isDockRomanizeEnabled",
     "isDockOffsetEnabled",
     "isDockRefreshEnabled",
   ]) {

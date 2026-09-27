@@ -6,10 +6,9 @@ import {
   PROVIDER_SWITCHED_LOG,
 } from "@constants";
 import { getTransientStorage, setTransientStorage } from "@core/storage";
-import unified from "./unified";
+import betterLyricsApi from "./betterLyricsApi";
+import lrclib from "./lrclib";
 import ytLyrics, { type YTLyricSourceResult } from "./yt";
-import { ytCaptions } from "./ytCaptions";
-import unison, { type UnisonData } from "@modules/lyrics/providers/unison";
 import { mergePreferredProviders } from "./providerList";
 import { logCore } from "@core/logger";
 /** Current version of the lyrics cache format */
@@ -64,7 +63,6 @@ export interface LyricSourceResult {
   artist?: string;
   song?: string;
   duration?: number;
-  unisonData?: UnisonData;
 }
 
 export type LyricsArray = Lyric[];
@@ -78,8 +76,6 @@ export interface Lyric {
   agent?: string;
   translations?: { [lang: string]: string };
   translation?: { text: string; lang: string }; // old property
-  romanization?: string;
-  timedRomanization?: LyricPart[];
   isInstrumental?: boolean;
 }
 
@@ -99,7 +95,6 @@ export interface ProviderParameters {
   audioTrackData: AudioTrackData | null;
   album: string | null;
   sourceMap: SourceMapType;
-  alwaysFetchMetadata: boolean;
   signal: AbortSignal;
 }
 
@@ -145,24 +140,13 @@ export function initProviders(): void {
   });
 }
 
+// Source #1 fills both Better Lyrics keys from one response; source #2 is LRCLIB; the last is
+// YouTube Music's own lyrics, which only count when timed (see lyrics.ts).
 const sourceKeyToFillFn = {
-  "binimum-richsynced": (p: ProviderParameters) => unified(p, "binimum-richsynced"),
-  "binimum-synced": (p: ProviderParameters) => unified(p, "binimum-synced"),
-  "bLyrics-richsynced": (p: ProviderParameters) => unified(p, "bLyrics-richsynced"),
-  "bLyrics-synced": (p: ProviderParameters) => unified(p, "bLyrics-synced"),
-  "unison-richsynced": unison,
-  "unison-wordsynced": unison,
-  "unison-synced": unison,
-  "unison-plain": unison,
-  "musixmatch-richsync": (p: ProviderParameters) => unified(p, "musixmatch-richsync"),
-  "musixmatch-synced": (p: ProviderParameters) => unified(p, "musixmatch-synced"),
-  "lrclib-synced": (p: ProviderParameters) => unified(p, "lrclib-synced"),
-  "lrclib-plain": (p: ProviderParameters) => unified(p, "lrclib-plain"),
-  "yt-captions": ytCaptions,
+  "bLyrics-richsynced": betterLyricsApi,
+  "bLyrics-synced": betterLyricsApi,
+  "lrclib-synced": lrclib,
   "yt-lyrics": ytLyrics,
-  "legato-synced": (p: ProviderParameters) => unified(p, "legato-synced"),
-  "portato-richsynced": (p: ProviderParameters) => unified(p, "portato-richsynced"),
-  metadata: (p: ProviderParameters) => unified(p, "metadata" as LyricSourceKey),
 } as const;
 
 export type LyricSourceKey = Readonly<keyof typeof sourceKeyToFillFn>;
@@ -184,7 +168,7 @@ export function newSourceMap(): SourceMapType {
 
 export async function saveLyricsToCache(providerParameters: ProviderParameters, provider: LyricSourceKey) {
   let source = providerParameters.sourceMap[provider];
-  if (source.filled && !source.resultCached && !source.lyricSourceResult && provider !== "metadata") {
+  if (source.filled && !source.resultCached && !source.lyricSourceResult) {
     source.resultCached = true;
     const cacheKey = `blyrics_${providerParameters.videoId}_${provider}`;
     await setTransientStorage(
@@ -249,4 +233,25 @@ export async function getLyrics(
   );
 
   return lyricSource.lyricSourceResult;
+}
+
+const DEFAULT_RETRY_AFTER_MS = 60_000;
+const MAX_RETRY_AFTER_MS = 60 * 60 * 1000;
+
+/**
+ * Converts a Retry-After header (delta-seconds or HTTP-date) into a local backoff in milliseconds.
+ * Missing or unreadable values fall back to one minute; the result is capped at one hour.
+ */
+export function parseRetryAfterMs(header: string | null): number {
+  let ms = DEFAULT_RETRY_AFTER_MS;
+  if (header) {
+    const trimmed = header.trim();
+    if (/^\d+$/.test(trimmed)) {
+      ms = Number(trimmed) * 1000;
+    } else {
+      const date = Date.parse(trimmed);
+      if (!Number.isNaN(date)) ms = Math.max(0, date - Date.now());
+    }
+  }
+  return Math.min(ms, MAX_RETRY_AFTER_MS);
 }

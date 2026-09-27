@@ -12,18 +12,12 @@
         "start:brave": "npm run generate:locales && extension start --chromium-binary \"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser\" --profile dist/extension-js/profiles/chromium-profile/dev",
         "build": "npm run generate:locales && extension build --browser all",
         "build:nativune": "npm run generate:locales && tsc --noEmit && extension build --browser chrome",
-        "build:ci": "npm run generate:locales && tsx tooling/build-and-patch.ts",
         "build:zip": "npm run generate:locales && extension build --browser all --zip",
-        "build:release": "npm run generate:locales && tsx tooling/build-release-zip.ts",
         "preview": "npm run generate:locales && extension preview",
         "lint": "biome lint --write . && biome format --write .",
-        "update-version": "tsx tooling/update-version.ts",
         "typecheck": "npm run generate:locales && tsc --noEmit",
         "selfcheck": "tsx tooling/run-selfchecks.ts",
-        "check:i18n-brand": "tsx tooling/check-i18n-brand.ts",
-        "knip": "knip --cache",
-        "knip:fix": "knip --fix",
-        "knip:ci": "knip --no-exit-code --reporter github-actions"
+        "check:i18n-brand": "tsx tooling/check-i18n-brand.ts"
     },
     "repository": {
         "type": "git",
@@ -46,25 +40,10 @@
     "dependencies": {
         "@braccato/core": "1.10.0",
         "@braccato/parsers": "0.2.3",
-        "@codemirror/autocomplete": "^6.20.3",
-        "@codemirror/commands": "^6.11.1",
-        "@codemirror/lint": "^6.9.7",
-        "@codemirror/search": "^6.7.2",
-        "@codemirror/state": "^6.7.5",
-        "@codemirror/view": "^6.43.12",
-        "@formkit/auto-animate": "^0.10.0",
-        "@fsegurai/codemirror-theme-material-dark": "^6.2.7",
-        "@plasmohq/edge-addons-api": "^2.0.0",
-        "codemirror-lang-rics": "^0.3.22",
-        "dompurify": "^3.4.15",
-        "fast-xml-parser": "^5.11.1",
         "fflate": "^0.8.3",
-        "marked": "^18.0.13",
-        "rics": "^0.3.22",
         "sortablejs": "^1.15.7"
     },
     "devDependencies": {
-        "@aws-sdk/client-s3": "^3.1136.0",
         "@biomejs/biome": "2.0.4",
         "@types/chrome": "^0.3.0",
         "@types/jsdom": "^30.0.0",
@@ -73,7 +52,6 @@
         "@typescript/lib-dom": "npm:@types/web@^0.0.280",
         "extension": "^4.1.5",
         "jsdom": "^30.1.0",
-        "knip": "^5.88.1",
         "tsx": "^4.23.15",
         "typescript": "^6.0.3"
     }

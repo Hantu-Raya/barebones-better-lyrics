@@ -327,10 +327,6 @@
     "message": "Налаштування мови та перекладу для Better Lyrics.",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "Романізація (транслітерація)",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "Переклад текстів пісень",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "Винятки мов",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "Транслітерація",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "Переклад",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "Пошук...",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "Клацніть, щоб увімкнути або вимкнути. Транслітерація не буде застосовуватись.",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "Клацніть, щоб увімкнути або вимкнути. Тексти цими мовами не будуть перекладені.",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "Скинути винятки",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "Усі винятки буде видалено. Продовжити?",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "Скасувати",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "Скинуто до стандартних значень",
     "description": "Success message after resetting exclusions",
     "placeholders": {

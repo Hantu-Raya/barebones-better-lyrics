@@ -248,7 +248,6 @@ function scheduleTogglePersist(): void {
   togglePersistTimer = setTimeout(() => {
     setStorage({
       isTranslateEnabled: AppState.isTranslateEnabled,
-      isRomanizationEnabled: AppState.isRomanizationEnabled,
     });
     reloadLyrics();
   }, TOGGLE_PERSIST_DELAY);
@@ -259,17 +258,8 @@ function toggleTranslate(): void {
   scheduleTogglePersist();
 }
 
-function toggleRomanize(): void {
-  AppState.isRomanizationEnabled = !AppState.isRomanizationEnabled;
-  scheduleTogglePersist();
-}
-
 function hasLyrics(): boolean {
   return mainView.lines.length > 0;
-}
-
-function lyricsContainNonLatin(): boolean {
-  return AppState.lyricData?.hasNonLatin === true;
 }
 
 // -- Sync offset control --------------------------
@@ -455,15 +445,6 @@ const controlBuilders: Record<string, () => HTMLElement | null> = {
   translate: () =>
     hasLyrics() && AppState.isDockTranslateEnabled
       ? buildToggle(controlIcons.translate, AppState.isTranslateEnabled, t("options_translation_tab"), toggleTranslate)
-      : null,
-  romanize: () =>
-    lyricsContainNonLatin() && AppState.isDockRomanizeEnabled
-      ? buildToggle(
-          controlIcons.romanize,
-          AppState.isRomanizationEnabled,
-          t("options_romanization_tab"),
-          toggleRomanize
-        )
       : null,
   offset: () => (isSynced() && AppState.isDockOffsetEnabled ? buildOffsetControl() : null),
   refresh: () => (hasLyrics() && AppState.isDockRefreshEnabled ? buildRefreshControl() : null),

@@ -1,5 +1,4 @@
 import {
-  DISABLE_EFFECTS_STYLE_ID,
   DOCK_CLASS,
   DOCK_CONTROL_ORDER_DEFAULT,
   DOCK_DEFAULT_POSITION,
@@ -7,14 +6,12 @@ import {
   LYRICS_DISABLED_ATTR,
 } from "@constants";
 import { AppState, reloadLyrics } from "@core/appState";
-import { clearCache, compileRicsToStyles, getStorage } from "@core/storage";
+import { clearCache, getStorage } from "@core/storage";
 import { configureLogging, logContent } from "@core/logger";
 import { clearCache as clearTranslationCache } from "@modules/lyrics/translation";
 import { mountDock, reloadAlbumArt, unmountDock, updateDockPosition } from "@modules/ui/dom";
 import { applyGlobalOffsets } from "@modules/ui/lyricsDock/offset";
-import { mainView } from "@modules/ui/mainLyricsView";
 import { isPlayerFullscreened, onFullscreenChange } from "@modules/ui/observer";
-import { applyCustomStyles, getAndApplyCustomStyles } from "@modules/ui/styleInjector";
 
 let hasInitializedMessageListener = false;
 
@@ -55,24 +52,6 @@ export function handleSettings(): void {
   onFullscreenControlsEnabled(
     () => document.documentElement.removeAttribute(FULLSCREEN_CONTROLS_DISABLED_ATTR),
     () => document.documentElement.setAttribute(FULLSCREEN_CONTROLS_DISABLED_ATTR, "")
-  );
-
-  onStylizedAnimationsEnabled(
-    () => {
-      document.getElementById(DISABLE_EFFECTS_STYLE_ID)?.remove();
-    },
-    async () => {
-      let styleElem = document.getElementById(DISABLE_EFFECTS_STYLE_ID);
-      if (!styleElem) {
-        styleElem = document.createElement("style");
-        styleElem.id = DISABLE_EFFECTS_STYLE_ID;
-
-        styleElem.textContent = await fetch(chrome.runtime.getURL("css/disablestylizedanimations.css")).then(res =>
-          res.text()
-        );
-        document.head.appendChild(styleElem);
-      }
-    }
   );
 }
 
@@ -116,19 +95,6 @@ function onFullscreenControlsEnabled(
       enableControls();
     } else {
       disableControls();
-    }
-  });
-}
-
-function onStylizedAnimationsEnabled(
-  enableAnimations: EnableDisableCallback,
-  disableAnimations: EnableDisableCallback
-): void {
-  getStorage({ isStylizedAnimationsEnabled: true }, items => {
-    if (items.isStylizedAnimationsEnabled) {
-      enableAnimations();
-    } else {
-      disableAnimations();
     }
   });
 }
@@ -229,22 +195,7 @@ export function listenForPopupMessages(): void {
 
   chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     logContent("Received message:", request.action);
-    if (request.action === "applyStyles") {
-      logContent("Processing applyStyles, RICS length:", request.ricsSource?.length);
-      if (request.ricsSource) {
-        logContent("Compiling RICS and applying styles");
-        const compiledCSS = compileRicsToStyles(request.ricsSource);
-        applyCustomStyles(compiledCSS);
-        mainView.relayout();
-        logContent("Styles applied successfully");
-      } else {
-        logContent("Loading styles from storage");
-        getAndApplyCustomStyles().then(() => {
-          mainView.relayout();
-          logContent("Styles loaded from storage and applied");
-        });
-      }
-    } else if (request.action === "updateSettings") {
+    if (request.action === "updateSettings") {
       clearTranslationCache();
       applyLoggingSetting();
       hideCursorOnIdle();
@@ -267,7 +218,6 @@ export function listenForPopupMessages(): void {
           reloadAlbumArt();
         }
       );
-      getAndApplyCustomStyles();
       reloadLyrics();
     } else if (request.action === "clearCache") {
       try {
@@ -311,7 +261,6 @@ export function loadDockSettings(callback?: () => void): void {
       "isUnisonAutoHideInFullscreenEnabled",
       "isDockSourceEnabled",
       "isDockTranslateEnabled",
-      "isDockRomanizeEnabled",
       "isDockOffsetEnabled",
       "isDockRefreshEnabled",
       "dockControlsOrder",
@@ -324,7 +273,6 @@ export function loadDockSettings(callback?: () => void): void {
         items.isControlsDockAutoHideInFullscreenEnabled ?? items.isUnisonAutoHideInFullscreenEnabled ?? true;
       AppState.isDockSourceEnabled = items.isDockSourceEnabled ?? true;
       AppState.isDockTranslateEnabled = items.isDockTranslateEnabled ?? true;
-      AppState.isDockRomanizeEnabled = items.isDockRomanizeEnabled ?? true;
       AppState.isDockOffsetEnabled = items.isDockOffsetEnabled ?? true;
       AppState.isDockRefreshEnabled = items.isDockRefreshEnabled ?? false;
       AppState.dockControlsOrder = normalizeDockControlsOrder(items.dockControlsOrder);
@@ -405,22 +353,18 @@ export function hideDockOnIdleInFullscreen(): void {
 }
 
 /**
- * Loads translation and romanization settings from storage and updates AppState.
+ * Loads translation settings from storage and updates AppState.
  */
 export function loadTranslationSettings(): void {
   getStorage(
     {
       isTranslateEnabled: false,
-      isRomanizationEnabled: false,
       translationLanguage: "en",
-      romanizationDisabledLanguages: [],
       translationDisabledLanguages: [],
     },
     items => {
       AppState.isTranslateEnabled = items.isTranslateEnabled;
-      AppState.isRomanizationEnabled = items.isRomanizationEnabled;
       AppState.translationLanguage = items.translationLanguage || "en";
-      AppState.romanizationDisabledLanguages = items.romanizationDisabledLanguages || [];
       AppState.translationDisabledLanguages = items.translationDisabledLanguages || [];
     }
   );

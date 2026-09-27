@@ -11,16 +11,12 @@ import { stringSimilarity } from "@modules/lyrics/lyricParseUtils";
 import { flushLoader, refreshDockSources, renderLoader } from "@modules/ui/dom";
 import type { Lyric, LyricSourceResult, ProviderParameters, SourceMapType } from "./providers/shared";
 import { getLyrics, newSourceMap, providerPriority } from "./providers/shared";
-import { awaitUnifiedStream } from "./providers/unified";
 import type { YTLyricSourceResult } from "./providers/yt";
 import { getSongAlbum, getSongMetadata, type SegmentMap } from "./requestSniffer/requestSniffer";
 import { clearCache as clearTranslationCache } from "./translation";
 import { mainView } from "@modules/ui/mainLyricsView";
 import { resetPlaybackClock, resumeAllAutoscroll } from "@braccato/core";
-import { registerThemeSetting } from "@braccato/core/themeSettings";
 import { logCore } from "@core/logger";
-
-const hideInstrumentalOnly = registerThemeSetting("blyrics-hide-instrumental-only", false, true);
 
 export function seekPlayer(timeS: number): void {
   logCore(`Seeking to ${timeS.toFixed(2)}s`);
@@ -28,9 +24,9 @@ export function seekPlayer(timeS: number): void {
   resumeAllAutoscroll();
 }
 
-function isInstrumentalOnly(lyrics: Lyric[]): boolean {
-  if (lyrics.length !== 1) return false;
-  return /^\[?instrumental\s*only\]?$/i.test(lyrics[0].words.trim());
+/** Plain/unsynced results carry no timing (every line starts at 0); only timed lyrics are shown. */
+function isTimed(lyrics: Lyric[]): boolean {
+  return lyrics.some(lyric => lyric.startTimeMs > 0);
 }
 
 function normalizeArtist(artist: string): string {
@@ -49,7 +45,7 @@ export type LyricSourceResultWithMeta = LyricSourceResult & {
 
 /**
  * What a view needs to build its own lyric DOM from scratch: the parsed lines, the language the
- * translation and romanization passes key off, and the timing context. The attribution and dock
+ * translation pass keys off, and the timing context. The attribution and dock
  * fields of {@link LyricSourceResultWithMeta} stay out; those are host chrome, not lyrics.
  */
 export interface ParsedLyrics {
@@ -127,7 +123,7 @@ export function applySegmentMapToLyrics(
 function recordAvailableProviders(sourceMap: SourceMapType): boolean {
   const collected = providerPriority.filter(key => {
     const result = sourceMap[key]?.lyricSourceResult;
-    return !!result && "lyrics" in result && Array.isArray(result.lyrics) && result.lyrics.length > 0;
+    return !!result && "lyrics" in result && Array.isArray(result.lyrics) && isTimed(result.lyrics);
   });
   const known = new Set([...AppState.availableProviderKeys, ...collected]);
   const next = providerPriority.filter(key => known.has(key));
@@ -139,7 +135,6 @@ function recordAvailableProviders(sourceMap: SourceMapType): boolean {
 async function completeSourceProbe(providerParameters: ProviderParameters, signal: AbortSignal): Promise<void> {
   if (!AppState.isControlsDockEnabled || !AppState.isDockSourceEnabled) return;
   try {
-    await awaitUnifiedStream(providerParameters.videoId);
     for (const provider of providerPriority) {
       if (signal.aborted) return;
       if (providerParameters.sourceMap[provider].filled) continue;
@@ -184,7 +179,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
     // We should get recalled if we were executed without a valid song/artist and aren't able to get lyrics
 
     let matchingSong = await getSongMetadata(videoId, 1, signal);
-    let swappedVideoId = false;
     let isAVSwitch =
       (matchingSong &&
         matchingSong.counterpartVideoId &&
@@ -201,7 +195,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       AppState.areLyricsTicking = true; // Keep lyrics ticking while new lyrics are fetched.
       logCore("Switching between audio/video: Skipping Loader", segmentMap);
     } else if (isSoftReload) {
-      // Same-song reload (provider switch or translation/romanization toggle): keep the
+      // Same-song reload (provider switch or translation toggle): keep the
       // current lyrics on screen and swap them in once the new ones are ready, no loader.
       AppState.suppressZeroTime = Date.now() + 5000;
       AppState.areLyricsTicking = true;
@@ -225,7 +219,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
 
       if (isMusicVideo && matchingSong.counterpartVideoId && matchingSong.segmentMap) {
         logCore("Switching VideoId to Audio Id");
-        swappedVideoId = true;
         videoId = matchingSong.counterpartVideoId;
       }
     }
@@ -261,7 +254,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
     let lyrics: LyricSourceResult | null = null;
     let sourceMap = newSourceMap();
 
-    // We depend on the cubey lyrics to fetch certain metadata, so we always call it even if it isn't the top priority
     let providerParameters: ProviderParameters = {
       song,
       artist,
@@ -270,7 +262,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       audioTrackData,
       album,
       sourceMap,
-      alwaysFetchMetadata: swappedVideoId,
       signal,
     };
     let ytLyricsEarlyInjectAbortController = new AbortController();
@@ -296,29 +287,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       return lyrics;
     });
 
-    try {
-      let meta = await getLyrics(providerParameters, "metadata");
-      if (meta && meta.album && meta.album.length > 0) {
-        providerParameters.album = meta.album;
-      }
-      if (meta && meta.song && meta.song.length > 0 && song !== meta.song) {
-        logCore("Using '" + meta.song + "' for song instead of '" + song + "'");
-        providerParameters.song = meta.song;
-      }
-
-      if (meta && meta.artist && meta.artist.length > 0 && artist !== meta.artist) {
-        logCore("Using '" + meta.artist + "' for artist instead of '" + artist + "'");
-        providerParameters.artist = meta.artist;
-      }
-
-      if (meta && meta.duration && duration !== meta.duration) {
-        logCore("Using '" + meta.duration + "' for duration instead of '" + duration + "'");
-        providerParameters.duration = meta.duration;
-      }
-    } catch (err) {
-      logCore(err);
-    }
-
     let selectedProvider: string | undefined;
 
     const pinnedProvider = AppState.manualProviderKey;
@@ -336,7 +304,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
         let sourceLyrics = await getLyrics(providerParameters, provider);
 
         if (sourceLyrics && sourceLyrics.lyrics && sourceLyrics.lyrics.length > 0) {
-          if (hideInstrumentalOnly.getBooleanValue() && isInstrumentalOnly(sourceLyrics.lyrics)) {
+          if (!isTimed(sourceLyrics.lyrics)) {
             continue;
           }
           ytLyricsEarlyInjectAbortController.abort("Lyrics are ready"); // May not be ideal when the stringSimilarity fails, but this should be rare anyways
@@ -439,14 +407,12 @@ export async function preFetchLyrics(
   let signal = new AbortController().signal; // create a signal to pass to other funcs, not used
 
   let matchingSong = await getSongMetadata(videoId, 250, signal);
-  let swappedVideoId = false;
 
   if (matchingSong) {
     song = matchingSong.title;
     artist = matchingSong.artist || artist;
 
     if (isMusicVideo && matchingSong.counterpartVideoId && matchingSong.segmentMap) {
-      swappedVideoId = true;
       videoId = matchingSong.counterpartVideoId;
     }
   }
@@ -461,7 +427,6 @@ export async function preFetchLyrics(
   logCore("Prefetching for: ", song, artist);
 
   let sourceMap = newSourceMap();
-  // We depend on the cubey lyrics to fetch certain metadata, so we always call it even if it isn't the top priority
   let providerParameters: ProviderParameters = {
     song,
     artist,
@@ -470,29 +435,8 @@ export async function preFetchLyrics(
     audioTrackData: null,
     album,
     sourceMap,
-    alwaysFetchMetadata: swappedVideoId,
     signal,
   };
-
-  try {
-    let meta = await getLyrics(providerParameters, "metadata");
-    if (meta && meta.album && meta.album.length > 0 && album !== meta.album) {
-      providerParameters.album = meta.album;
-    }
-    if (meta && meta.song && meta.song.length > 0 && song !== meta.song) {
-      providerParameters.song = meta.song;
-    }
-
-    if (meta && meta.artist && meta.artist.length > 0 && artist !== meta.artist) {
-      providerParameters.artist = meta.artist;
-    }
-
-    if (meta && meta.duration && duration !== meta.duration) {
-      providerParameters.duration = meta.duration;
-    }
-  } catch (err) {
-    logCore(err);
-  }
 
   for (let provider of providerPriority) {
     if (signal.aborted) {

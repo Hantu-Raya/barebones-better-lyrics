@@ -327,10 +327,6 @@
     "message": "Better Lyrics의 언어 및 번역 설정입니다.",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "로마자 표기",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "가사 번역",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "언어 제외 옵션",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "로마자 표기",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "번역",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "언어 검색...",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "토글하려면 클릭하세요. 제외된 언어는 로마자 표기가 되지 않습니다.",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "토글하려면 클릭하세요. 제외된 언어는 번역되지 않습니다.",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "$TYPE$을 제외하고 재설정",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "이렇게 하면 제외된 모든 언어가 지워집니다. 계속하시겠어요?",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "취소",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "$TYPE$를 제외한 항목이 기본값으로 재설정되었습니다",
     "description": "Success message after resetting exclusions",
     "placeholders": {

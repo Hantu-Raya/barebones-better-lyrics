@@ -327,10 +327,6 @@
     "message": "Impostazioni di lingua e traduzione per Better Lyrics.",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "Romanizzazione",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "Traduci testi delle canzoni",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "Lingue Escluse",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "Romanizzazione",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "Traduzione",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "Cerca lingue...",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "Clicca per attivare. Le lingue escluse non verranno romanizzate.",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "Clicca per attivare. Le fonti di lingua escluse non verranno tradotte.",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "Reimposta Esclusioni di $TYPE$",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "Questo eliminerà tutte le lingue escluse. Vuoi continuare?",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "Annulla",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "Esclusioni di $TYPE$ reimpostati alle opzioni predefinite",
     "description": "Success message after resetting exclusions",
     "placeholders": {

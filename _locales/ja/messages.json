@@ -327,10 +327,6 @@
     "message": "Better Lyricsの言語と翻訳の設定。",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "ローマ字化",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "歌詞を翻訳",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "Language Exclusions",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "ローマ字化",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "翻訳",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "言語を検索…",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "Click to toggle. Excluded languages will not be romanized.",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "Click to toggle. Excluded source languages will not be translated.",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "$TYPE$ 除外をリセット",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "除外されたすべての言語をクリアします。続行しますか？",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "キャンセル",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "$TYPE$ 除外はデフォルトにリセットされました",
     "description": "Success message after resetting exclusions",
     "placeholders": {

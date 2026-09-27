@@ -1,10 +1,3 @@
-const LOG_SOURCE_MAX_LENGTH = 500;
-
-export function truncateSource(source: string): string {
-  if (source.length <= LOG_SOURCE_MAX_LENGTH) return source;
-  return source.slice(0, LOG_SOURCE_MAX_LENGTH) + `... (${source.length} chars total)`;
-}
-
 /**
  * Checks if a language code (or its base language) exists in a collection.
  * Handles variants like "ja-JP" matching "ja", "zh-Hans" matching "zh".

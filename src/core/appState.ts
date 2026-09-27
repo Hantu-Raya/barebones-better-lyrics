@@ -2,7 +2,6 @@ import { DOCK_CONTROL_ORDER_DEFAULT, DOCK_DEFAULT_POSITION } from "@constants";
 import type { LyricDecorations, LyricsData } from "@modules/lyrics/injectLyrics";
 import { createLyrics, type ParsedLyrics } from "@modules/lyrics/lyrics";
 import type { LyricSourceKey } from "@modules/lyrics/providers/shared";
-import { resetUnifiedStream } from "@modules/lyrics/providers/unified";
 import { flushLoader } from "@modules/ui/dom";
 import { clearSongCache } from "@core/storage";
 import { logError } from "@core/logger";
@@ -42,8 +41,6 @@ interface AppStateType {
   lastLoadedVideoId: string | null;
   lyricAbortController: AbortController | null;
   isTranslateEnabled: boolean;
-  isRomanizationEnabled: boolean;
-  romanizationDisabledLanguages: string[];
   translationDisabledLanguages: string[];
   translationLanguage: string;
   isPassiveScrollEnabled: boolean;
@@ -61,7 +58,6 @@ interface AppStateType {
   isControlsDockAutoHideInFullscreenEnabled: boolean;
   isDockSourceEnabled: boolean;
   isDockTranslateEnabled: boolean;
-  isDockRomanizeEnabled: boolean;
   isDockOffsetEnabled: boolean;
   isDockRefreshEnabled: boolean;
   dockControlsOrder: string[];
@@ -86,8 +82,6 @@ export const AppState: AppStateType = {
   lastLoadedVideoId: null,
   lyricAbortController: null,
   isTranslateEnabled: false,
-  isRomanizationEnabled: false,
-  romanizationDisabledLanguages: [],
   translationDisabledLanguages: [],
   translationLanguage: "en",
   isPassiveScrollEnabled: true,
@@ -105,7 +99,6 @@ export const AppState: AppStateType = {
   isControlsDockAutoHideInFullscreenEnabled: true,
   isDockSourceEnabled: true,
   isDockTranslateEnabled: true,
-  isDockRomanizeEnabled: true,
   isDockOffsetEnabled: true,
   isDockRefreshEnabled: false,
   dockControlsOrder: [...DOCK_CONTROL_ORDER_DEFAULT],
@@ -121,7 +114,6 @@ export async function refreshCurrentSong(): Promise<void> {
   const videoId = AppState.lastLoadedVideoId;
   AppState.availableProviderKeys = [];
   if (videoId) {
-    resetUnifiedStream(videoId);
     await clearSongCache(videoId);
   }
   reloadLyrics();

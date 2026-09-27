@@ -327,10 +327,6 @@
     "message": "Taal- en vertaalinstellingen voor Better Lyrics.",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "Romanisatie",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "Vertaal songteksten",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "Taal Uitsluitingen",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "Romanisatie",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "Vertaling",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "Zoek talen...",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "Klik de schakelaar. Uitgesloten talen worden niet geromaniseerd.",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "Klik om te schakelen. Uitgesloten brontalen worden niet vertaald.",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "Reset $TYPE$ UItsluitingen",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "Dit zal alle uitgesloten talen wissen. Doorgaan?",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "Annuleer",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "$TYPE$ uitsluitingen gereset naar standaard",
     "description": "Success message after resetting exclusions",
     "placeholders": {

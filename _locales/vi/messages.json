@@ -327,10 +327,6 @@
     "message": "Cài đặt ngôn ngữ và dịch thuật cho Better Lyrics.",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "Phiên âm",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "Dịch lời bài hát",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "Danh sách ngôn ngữ bị loại trừ",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "Phiên âm",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "Dịch thuật",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "Tìm ngôn ngữ...",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "Nhấn để bật/tắt. Các ngôn ngữ bị loại trừ sẽ không được phiên âm.",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "Nhấn để bật/tắt. Các ngôn ngữ gốc bị loại trừ sẽ không được dịch.",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "Đặt lại loại trừ $TYPE$",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "Thao tác này sẽ xóa tất cả các ngôn ngữ đã bị loại trừ. Bạn có muốn tiếp tục không?",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "Hủy",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "Danh sách loại trừ $TYPE$ đã được đặt lại về mặc định",
     "description": "Success message after resetting exclusions",
     "placeholders": {

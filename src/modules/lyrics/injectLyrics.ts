@@ -3,7 +3,6 @@ import {
   LYRICS_TAB_NOT_DISABLED_LOG,
   NO_LYRICS_FOUND_LOG,
   NO_LYRICS_TEXT_SELECTOR,
-  ROMANIZATION_LANGUAGES,
   SYNC_DISABLED_LOG,
   TAB_HEADER_CLASS,
   TRANSLATION_ENABLED_LOG,
@@ -11,13 +10,7 @@ import {
 import { AppState } from "@core/appState";
 import { t } from "@core/i18n";
 import { applySegmentMapToLyrics, type LyricSourceResultWithMeta } from "@modules/lyrics/lyrics";
-import type { LyricPart } from "@modules/lyrics/providers/shared";
-import {
-  getRomanizationFromCache,
-  getTranslationFromCache,
-  romanizeBatch,
-  translateBatch,
-} from "@modules/lyrics/translation";
+import { getTranslationFromCache, translateBatch } from "@modules/lyrics/translation";
 import {
   addFooter,
   addNoLyricsButton,
@@ -29,7 +22,7 @@ import {
 } from "@modules/ui/dom";
 import { lyricsElementAdded, mainView } from "@modules/ui/mainLyricsView";
 import { disableNativeLyricsFocus } from "@modules/ui/nativeLyricsFocus";
-import { injectRomanization, injectTranslation, type LineData } from "@braccato/core";
+import { injectTranslation, type LineData } from "@braccato/core";
 import { containsNonLatin, detectNonLatinLanguage } from "@braccato/core/text";
 import { langCodesMatch, languageMatchesAny } from "@utils";
 import { logCore } from "@core/logger";
@@ -37,13 +30,11 @@ import { logCore } from "@core/logger";
 export type { LineData };
 
 /**
- * What the translation and romanization passes put on one line. They inject straight into the main
+ * What the translation pass puts on one line. It inject straight into the main
  * view's elements and write nothing back to the `Lyric` objects, so a second view building from the
  * same lines would otherwise show neither.
  */
 interface LyricLineDecoration {
-  romanization?: string;
-  timedRomanization?: LyricPart[];
   translation?: string;
   translationLanguage?: string;
 }
@@ -61,10 +52,6 @@ function recordLyricDecoration(index: number, decoration: LyricLineDecoration): 
 function updateLyricLanguage(language: string): void {
   if (AppState.lyricData) AppState.lyricData.language = language;
   mainView.setLanguage(language);
-}
-
-function isRomanizationDisabledForLang(lang: string): boolean {
-  return languageMatchesAny(lang, AppState.romanizationDisabledLanguages);
 }
 
 function isTranslationDisabledForLang(lang: string): boolean {
@@ -90,7 +77,7 @@ export interface LyricsData {
  * Processes lyrics data and prepares it for rendering.
  * Sets language settings, validates data, and initiates DOM injection.
  *
- * @param doc - Document the translation and romanization nodes are created in
+ * @param doc - Document the translation nodes are created in
  * @param data - Processed lyrics data
  * @param keepLoaderVisible
  * @param signal - AbortSignal to cancel async operations
@@ -129,7 +116,7 @@ export function processLyrics(
  * Injects lyrics into the DOM with timing, click handlers, and animations.
  * Creates the complete lyrics interface including synchronization support.
  *
- * @param doc - Document the translation and romanization nodes are created in
+ * @param doc - Document the translation nodes are created in
  * @param data - Complete lyrics data object
  * @param keepLoaderVisible
  * @param signal - AbortSignal to cancel async operations
@@ -205,7 +192,7 @@ function injectLyrics(
     addNoLyricsButton(data.song, data.artist);
   }
 
-  void processBatchTranslationsAndRomanizations(doc, data, lines, isStale, signal);
+  void processBatchTranslations(doc, data, lines, isStale, signal);
 
   if (data.segmentMap) {
     applySegmentMapToLyrics(lyricsData, lines, data.segmentMap);
@@ -221,9 +208,9 @@ function injectLyrics(
 }
 
 /**
- * Handles batch translation and romanization processing.
+ * Handles batch translation processing.
  */
-async function processBatchTranslationsAndRomanizations(
+async function processBatchTranslations(
   doc: Document,
   data: LyricSourceResultWithMeta,
   linesData: readonly LineData[],
@@ -232,16 +219,14 @@ async function processBatchTranslationsAndRomanizations(
 ): Promise<void> {
   const lyrics = data.lyrics!;
   const targetTranslationLang = AppState.translationLanguage;
-  const isRomanizationEnabled = AppState.isRomanizationEnabled;
   const isTranslateEnabled = AppState.isTranslateEnabled;
 
-  const romanizationBatch: { index: number; text: string }[] = [];
   const translationBatch: { index: number; text: string }[] = [];
 
   let sourceLanguage = data.language;
   let didInjectCachedContent = false;
 
-  // 1. Identify what needs to be translated/romanized
+  // 1. Identify what needs to be translated
   lyrics.forEach((item, index) => {
     if (item.isInstrumental) return;
 
@@ -252,41 +237,6 @@ async function processBatchTranslationsAndRomanizations(
     const scriptLanguage = detectNonLatinLanguage(item.words);
     const trustedLanguage =
       sourceLanguage && scriptLanguage && !langCodesMatch(sourceLanguage, scriptLanguage) ? undefined : sourceLanguage;
-
-    // --- Romanization ---
-    const isLanguageDisabledForRomanization = !!trustedLanguage && isRomanizationDisabledForLang(trustedLanguage);
-    if (isRomanizationEnabled && !isLanguageDisabledForRomanization) {
-      let romanizedResult: string | null = null;
-      let timedRomanization: LyricPart[] | null = null;
-
-      if (item.romanization) {
-        romanizedResult = item.romanization;
-        timedRomanization = item.timedRomanization || null;
-      } else {
-        romanizedResult = getRomanizationFromCache(item.words);
-      }
-
-      if (romanizedResult) {
-        if (!isSameText(romanizedResult, item.words)) {
-          injectRomanization(doc, lyricElement, lineData, romanizedResult, timedRomanization);
-          recordLyricDecoration(index, {
-            romanization: romanizedResult,
-            timedRomanization: timedRomanization ?? undefined,
-          });
-          didInjectCachedContent = true;
-        }
-      } else {
-        const shouldRomanize =
-          (sourceLanguage && languageMatchesAny(sourceLanguage, ROMANIZATION_LANGUAGES)) ||
-          containsNonLatin(item.words);
-        if (shouldRomanize || !sourceLanguage) {
-          const detectedLang = detectNonLatinLanguage(item.words);
-          if (!detectedLang || !isRomanizationDisabledForLang(detectedLang)) {
-            romanizationBatch.push({ index, text: item.words });
-          }
-        }
-      }
-    }
 
     // --- Translation ---
     const isSourceLangDisabled = !!trustedLanguage && isTranslationDisabledForLang(trustedLanguage);
@@ -327,46 +277,12 @@ async function processBatchTranslationsAndRomanizations(
   // 2. Perform Batch Requests
   const promises: Promise<void>[] = [];
 
-  if (romanizationBatch.length > 0) {
-    promises.push(
-      (async () => {
-        const response = await romanizeBatch({
-          lines: romanizationBatch.map(b => b.text),
-          targetLanguage: targetTranslationLang,
-          sourceLanguage: sourceLanguage || undefined,
-          videoId: data.videoId,
-          signal,
-        });
-        if (isStale()) return;
-
-        if (!sourceLanguage && response.detectedLanguage) {
-          sourceLanguage = response.detectedLanguage;
-          updateLyricLanguage(sourceLanguage);
-          logCore("Determined language via romanization batch: " + sourceLanguage);
-        }
-
-        if (isRomanizationDisabledForLang(sourceLanguage || "")) return;
-
-        response.results.forEach((result, i) => {
-          if (result) {
-            const originalIndex = romanizationBatch[i].index;
-            injectRomanization(doc, linesData[originalIndex].lyricElement, linesData[originalIndex], result);
-            recordLyricDecoration(originalIndex, { romanization: result });
-          }
-        });
-        lyricsElementAdded();
-      })()
-    );
-  }
-
   if (translationBatch.length > 0) {
     promises.push(
       (async () => {
         const response = await translateBatch({
           lines: translationBatch.map(b => b.text),
           targetLanguage: targetTranslationLang,
-          sourceLanguage: sourceLanguage || undefined,
-          videoId: data.videoId,
           signal,
         });
         if (isStale()) return;

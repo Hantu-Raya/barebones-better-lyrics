@@ -7,7 +7,6 @@ export {
   LINE_CLASS,
   LYRICS_CLASS,
   LYRICS_WRAPPER_ID,
-  ROMANIZED_LYRICS_CLASS,
   TRANSLATED_LYRICS_CLASS,
   WORD_HIGHLIGHT_CLASS,
 } from "@braccato/core/constants";
@@ -20,7 +19,6 @@ export const DOCK_DEFAULT_POSITION = "bottom-right" as const;
 export const DOCK_CONTROL_ORDER_DEFAULT = [
   "source",
   "translate",
-  "romanize",
   "offset",
   "refresh",
 ] as const;
@@ -31,14 +29,12 @@ export const LYRICS_PAGE_TYPE = "MUSIC_PAGE_TYPE_TRACK_LYRICS" as const;
 export const NO_LYRICS_TEXT_SELECTOR =
   "#tab-renderer > ytmusic-message-renderer > yt-formatted-string.text.style-scope.ytmusic-message-renderer" as const;
 export const FULLSCREEN_BUTTON_SELECTOR = ".fullscreen-button" as const;
-export const SHADERS_DETECTION_SELECTOR = '[id^="better-lyrics-kawarp-"]' as const;
 export const MINI_PLAYER_BUTTON_SELECTOR = ".player-minimize-button" as const;
 
 // DOM IDs and Attributes
 export const LYRICS_LOADER_ID = "blyrics-loader" as const;
 export const LYRICS_DISABLED_ATTR = "blyrics-dfs" as const;
 export const FULLSCREEN_CONTROLS_DISABLED_ATTR = "blyrics-no-fs-controls" as const;
-export const DISABLE_EFFECTS_STYLE_ID = "blyrics-disable-effects" as const;
 export const HIDDEN_CLASS = "blyrics-hidden" as const;
 
 // Custom Events
@@ -60,75 +56,20 @@ export const NOTO_SANS_UNIVERSAL_LINK =
 export const HOMEPAGE_URL = "https://betterlyrics.org" as const;
 export const HOMEPAGE_DOMAIN = "betterlyrics.org" as const;
 export const HOMEPAGE_ICON_URL = "https://betterlyrics.org/icon-512.png" as const;
-export const UNISON_API_URL = "https://unison.betterlyrics.org/lyrics" as const;
 export const DISCORD_INVITE_URL = "https://discord.gg/UsHE3d5fWF" as const;
-export const SHADERS_CWS_URL =
-  "https://chromewebstore.google.com/detail/better-lyrics-shaders/mffpncjphfmkppebdoaehdlnagnlpfai" as const;
-export const SHADERS_AMO_URL = "https://addons.mozilla.org/en-US/firefox/addon/better-lyrics-shaders/" as const;
-export const STORE_CWS_URL =
-  "https://chromewebstore.google.com/detail/better-lyrics/effdbpeggelllpfkjppbokhmmiinhlmg" as const;
-export const STORE_AMO_URL = "https://addons.mozilla.org/en-US/firefox/addon/better-lyrics/" as const;
-export const STORE_EDGE_URL =
-  "https://microsoftedge.microsoft.com/addons/detail/better-lyrics-lyrics-for/mjfeaklppoegooljmjicjdbiccgjdlhd" as const;
-export const RELEASES_LATEST_API_URL =
-  "https://api.github.com/repos/better-lyrics/better-lyrics/releases/latest" as const;
-export const THEME_STORE_API_URL = "https://themes.betterlyrics.org" as const;
-export const UNISON_API_BASE_URL = "https://unison.betterlyrics.org" as const;
-export const UNISON_TRANSLATE_URL = `${UNISON_API_BASE_URL}/translate` as const;
-export const THEME_STORE_TURNSTILE_URL = `${THEME_STORE_API_URL}/turnstile` as const;
-const THEME_REGISTRY_BASE = "https://raw.githubusercontent.com/better-lyrics/themes" as const;
-export const THEME_REGISTRY_URL = `${THEME_REGISTRY_BASE}/master` as const;
-export const THEME_DISCUSSIONS_URL = "https://github.com/better-lyrics/themes/discussions" as const;
 export const TRANSLATE_LYRICS_URL = function (lang: string, text: string): string {
   return `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`;
 };
-export const TRANSLATE_IN_ROMAJI = function (lang: string, text: string): string {
-  return `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${lang}&tl=${lang}-Latn&dt=t&dt=rm&q=${encodeURIComponent(text)}`;
-};
-
-export const CUBEY_LYRICS_API_URL_TURNSTILE = "https://lyrics.api.dacubeking.com/" as const;
-
-export const CUBEY_LYRICS_API_URL = "https://lyrics.api.dacubeking.com/" as const;
-
-// Supported Romanization Languages
-// Display names are fallback only - use getLanguageDisplayName() from @core/i18n for UI
-// to get auto-localized names via Intl.DisplayNames API
-export const ROMANIZATION_LANGUAGES: Record<string, string> = {
-  ja: "Japanese",
-  ko: "Korean",
-  zh: "Chinese",
-  "zh-CN": "Chinese (Simplified)",
-  "zh-TW": "Chinese (Traditional)",
-  ru: "Russian",
-  hi: "Hindi",
-  ar: "Arabic",
-  th: "Thai",
-  el: "Greek",
-  he: "Hebrew",
-  bn: "Bengali",
-  ta: "Tamil",
-  te: "Telugu",
-  ml: "Malayalam",
-  kn: "Kannada",
-  gu: "Gujarati",
-  pa: "Punjabi",
-  mr: "Marathi",
-  ur: "Urdu",
-  si: "Sinhala",
-  my: "Burmese",
-  ka: "Georgian",
-  km: "Khmer",
-  lo: "Lao",
-  fa: "Persian",
-};
+// Better Lyrics public API, cache-only (no key, no challenge): 401 means uncached.
+export const BETTER_LYRICS_API_URL = "https://api.betterlyrics.org/getLyrics" as const;
+export const LRCLIB_API_URL = "https://lrclib.net/api/get" as const;
+export const LRCLIB_CLIENT_HEADER =
+  "Barebones Better Lyrics 2.4.1.1 (https://github.com/Hantu-Raya/barebones-better-lyrics)" as const;
+export const PROVIDER_TIMEOUT_MS = 20_000;
 
 // Log Prefixes
 export const LOG_PREFIX = "[BetterLyrics]" as const;
 export const LOG_PREFIX_CONTENT = "[BetterLyrics:Content]" as const;
-export const LOG_PREFIX_BACKGROUND = "[BetterLyrics:Background]" as const;
-export const LOG_PREFIX_EDITOR = "[BetterLyrics:Editor]" as const;
-export const LOG_PREFIX_STORE = "[BetterLyrics:Store]" as const;
-export const LOG_PREFIX_UNISON = "[BetterLyrics:Unison]" as const;
 
 // -- Auth (Sign in with Better Lyrics) --------------------------
 
@@ -181,208 +122,6 @@ export const LYRICS_AD_OVERLAY_ID = "blyrics-ad-overlay" as const;
 
 export type SyncType = "syllable" | "word" | "line" | "unsynced";
 
-// Do not modify, its the same as server and mismatch will lead to wrong display names
-export const IDENTITY_ADJECTIVES = [
-  "Melodic",
-  "Harmonic",
-  "Acoustic",
-  "Electric",
-  "Mellow",
-  "Groovy",
-  "Funky",
-  "Vibrant",
-  "Golden",
-  "Crystal",
-  "Velvet",
-  "Cosmic",
-  "Stellar",
-  "Radiant",
-  "Mystic",
-  "Serene",
-  "Dynamic",
-  "Smooth",
-  "Crisp",
-  "Warm",
-  "Bright",
-  "Deep",
-  "Swift",
-  "Bold",
-  "Noble",
-  "Grand",
-  "Royal",
-  "Epic",
-  "Vivid",
-  "Lucid",
-  "Prime",
-  "Pure",
-  "Sonic",
-  "Hyper",
-  "Ultra",
-  "Mega",
-  "Super",
-  "Astral",
-  "Lunar",
-  "Solar",
-  "Neon",
-  "Retro",
-  "Classic",
-  "Modern",
-  "Fusion",
-  "Primal",
-  "Zen",
-  "Nova",
-  "Alpha",
-  "Omega",
-  "Delta",
-  "Sigma",
-  "Quantum",
-  "Atomic",
-  "Cyber",
-  "Digital",
-  "Analog",
-  "Stereo",
-  "Studio",
-  "Live",
-  "Remix",
-  "Master",
-  "Platinum",
-  "Diamond",
-] as const;
-
-export const IDENTITY_NOUNS = [
-  "Bass",
-  "Guitar",
-  "Piano",
-  "Drum",
-  "Synth",
-  "Chord",
-  "Beat",
-  "Riff",
-  "Note",
-  "Tempo",
-  "Rhythm",
-  "Melody",
-  "Verse",
-  "Chorus",
-  "Bridge",
-  "Hook",
-  "Track",
-  "Vinyl",
-  "Record",
-  "Album",
-  "Mix",
-  "Tape",
-  "Loop",
-  "Sample",
-  "Treble",
-  "Octave",
-  "Scale",
-  "Arpeggio",
-  "Cadence",
-  "Motif",
-  "Theme",
-  "Score",
-  "Cymbal",
-  "Snare",
-  "Kick",
-  "Hihat",
-  "Conga",
-  "Bongo",
-  "Shaker",
-  "Gong",
-  "Violin",
-  "Cello",
-  "Flute",
-  "Horn",
-  "Trumpet",
-  "Sax",
-  "Harp",
-  "Bell",
-  "Staccato",
-  "Legato",
-  "Crescendo",
-  "Fermata",
-  "Vibrato",
-  "Tremolo",
-  "Glissando",
-  "Sforzando",
-  "Forte",
-  "Allegro",
-  "Adagio",
-  "Presto",
-  "Andante",
-  "Largo",
-  "Vivace",
-  "Maestro",
-] as const;
-
-export const IDENTITY_ACTIONS = [
-  "Solo",
-  "Remix",
-  "Groove",
-  "Flow",
-  "Vibe",
-  "Echo",
-  "Pulse",
-  "Drift",
-  "Wave",
-  "Loop",
-  "Drop",
-  "Rise",
-  "Fade",
-  "Blend",
-  "Sync",
-  "Glide",
-  "Swing",
-  "Bounce",
-  "Slide",
-  "Roll",
-  "Spin",
-  "Twist",
-  "Shake",
-  "Break",
-  "Jam",
-  "Play",
-  "Rock",
-  "Pop",
-  "Jazz",
-  "Funk",
-  "Soul",
-  "Blues",
-  "Surge",
-  "Rush",
-  "Dash",
-  "Zoom",
-  "Flash",
-  "Spark",
-  "Blast",
-  "Burst",
-  "Chill",
-  "Cruise",
-  "Coast",
-  "Sway",
-  "Float",
-  "Hover",
-  "Soar",
-  "Leap",
-  "Strike",
-  "Stomp",
-  "Clap",
-  "Snap",
-  "Tap",
-  "Slap",
-  "Pluck",
-  "Strum",
-  "Hum",
-  "Sing",
-  "Chant",
-  "Call",
-  "Shout",
-  "Whisper",
-  "Croon",
-  "Belt",
-] as const;
-
 interface ProviderConfig {
   key: LyricSourceKey;
   displayName: string;
@@ -392,41 +131,9 @@ interface ProviderConfig {
 
 export const PROVIDER_CONFIGS: ProviderConfig[] = [
   { key: "bLyrics-richsynced", displayName: "Better Lyrics", syncType: "syllable", priority: 0 },
-  {
-    key: "unison-richsynced",
-    displayName: "Unison",
-    syncType: "syllable",
-    priority: 1,
-  },
-  { key: "binimum-richsynced", displayName: "BiniLyrics", syncType: "syllable", priority: 2 },
-  {
-    key: "unison-wordsynced",
-    displayName: "Unison",
-    syncType: "word",
-    priority: 3,
-  },
-  { key: "portato-richsynced", displayName: "Better Lyrics Portato", syncType: "word", priority: 4 },
-  { key: "musixmatch-richsync", displayName: "Musixmatch", syncType: "word", priority: 5 },
-  { key: "bLyrics-synced", displayName: "Better Lyrics", syncType: "line", priority: 6 },
-  {
-    key: "unison-synced",
-    displayName: "Unison",
-    syncType: "line",
-    priority: 7,
-  },
-  { key: "yt-captions", displayName: "YouTube Captions", syncType: "line", priority: 8 },
-  { key: "binimum-synced", displayName: "BiniLyrics", syncType: "line", priority: 9 },
-  { key: "lrclib-synced", displayName: "LRCLib", syncType: "line", priority: 10 },
-  { key: "legato-synced", displayName: "Better Lyrics Legato", syncType: "line", priority: 11 },
-  { key: "musixmatch-synced", displayName: "Musixmatch", syncType: "line", priority: 12 },
-  { key: "yt-lyrics", displayName: "YouTube", syncType: "unsynced", priority: 13 },
-  {
-    key: "unison-plain",
-    displayName: "Unison",
-    syncType: "unsynced",
-    priority: 14,
-  },
-  { key: "lrclib-plain", displayName: "LRCLib", syncType: "unsynced", priority: 15 },
+  { key: "bLyrics-synced", displayName: "Better Lyrics", syncType: "line", priority: 1 },
+  { key: "lrclib-synced", displayName: "LRCLib", syncType: "line", priority: 2 },
+  { key: "yt-lyrics", displayName: "YouTube", syncType: "line", priority: 3 },
 ] as const;
 
 export const LYRIC_SOURCE_KEYS = PROVIDER_CONFIGS.map(p => p.key);

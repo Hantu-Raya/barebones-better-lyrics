@@ -1,4 +1,4 @@
-import { TRANSLATE_IN_ROMAJI, TRANSLATE_LYRICS_URL, TRANSLATION_ERROR_LOG, UNISON_TRANSLATE_URL } from "@constants";
+import { TRANSLATE_LYRICS_URL, TRANSLATION_ERROR_LOG } from "@constants";
 import { logCore } from "@core/logger";
 
 interface TranslationResult {
@@ -6,21 +6,11 @@ interface TranslationResult {
   translatedText: string;
 }
 
-interface TranslationCache {
-  romanization: Map<string, string>;
-  translation: Map<string, TranslationResult>;
-}
-
-const cache: TranslationCache = {
-  romanization: new Map(),
-  translation: new Map(),
-};
+const translationCache = new Map<string, TranslationResult>();
 
 interface BatchRequest {
   lines: string[];
-  targetLanguage?: string; // For translations
-  sourceLanguage?: string; // For romanizations
-  videoId?: string;
+  targetLanguage?: string;
   signal?: AbortSignal;
 }
 
@@ -29,76 +19,9 @@ interface BatchTranslationResponse {
   detectedLanguage: string;
 }
 
-interface BatchRomanizationResponse {
-  results: (string | null)[];
-  detectedLanguage: string;
-}
-
 const BATCH_SEPARATOR = "\n\n;\n\n";
+/** Target length of one Google `client=gtx` request URL; lines are batched up to this size. */
 const MAX_URL_LENGTH = 15000;
-
-interface UnisonTranslateLine {
-  translation: string | null;
-  romanization: string | null;
-  needsTranslation: boolean;
-}
-
-const inFlightUnison = new Map<string, Promise<string | undefined>>();
-
-// Coalesce the concurrent translate and romanize passes so a song hits /translate once, not twice.
-function enrichViaUnison(
-  items: { index: number; text: string }[],
-  to: string,
-  from: string | undefined,
-  videoId: string | undefined,
-  signal?: AbortSignal
-): Promise<string | undefined> {
-  if (items.length === 0) return Promise.resolve(undefined);
-  const body = JSON.stringify({ lines: items.map(item => item.text), to, from, videoId });
-  const existing = inFlightUnison.get(body);
-  if (existing) return existing;
-  const request = fetchUnison(body, items, to, signal);
-  inFlightUnison.set(body, request);
-  return request.finally(() => inFlightUnison.delete(body));
-}
-
-async function fetchUnison(
-  body: string,
-  items: { index: number; text: string }[],
-  to: string,
-  signal?: AbortSignal
-): Promise<string | undefined> {
-  try {
-    const response = await fetch(UNISON_TRANSLATE_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body,
-      signal,
-    });
-    if (!response.ok) return;
-    const data = (await response.json()) as { lines: UnisonTranslateLine[]; detectedLang: string };
-    if (!Array.isArray(data.lines) || data.lines.length !== items.length) return;
-
-    items.forEach((item, i) => {
-      const line = data.lines[i];
-      const lower = item.text.toLowerCase();
-      if (line?.translation && line.needsTranslation && line.translation.toLowerCase() !== lower) {
-        cache.translation.set(`${to}_${item.text}`, {
-          originalLanguage: data.detectedLang || "",
-          translatedText: line.translation,
-        });
-      }
-      if (line?.romanization && line.romanization.toLowerCase() !== lower) {
-        cache.romanization.set(item.text, line.romanization);
-      }
-    });
-    return data.detectedLang || undefined;
-  } catch (error) {
-    if ((error as Error).name !== "AbortError") {
-      logCore(TRANSLATION_ERROR_LOG, error);
-    }
-  }
-}
 
 /**
  * Translates a batch of lyric lines in a single request, chunked if necessary.
@@ -110,7 +33,7 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
   }
 
   const results: (TranslationResult | null)[] = new Array(lines.length).fill(null);
-  let toTranslate: { index: number; text: string }[] = [];
+  const toTranslate: { index: number; text: string }[] = [];
 
   // Check cache first
   lines.forEach((line, index) => {
@@ -118,8 +41,8 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
     if (!trimmed || trimmed === "♪") return;
 
     const cacheKey = `${targetLanguage}_${trimmed}`;
-    if (cache.translation.has(cacheKey)) {
-      results[index] = cache.translation.get(cacheKey)!;
+    if (translationCache.has(cacheKey)) {
+      results[index] = translationCache.get(cacheKey)!;
     } else {
       toTranslate.push({ index, text: trimmed });
     }
@@ -127,25 +50,6 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
 
   if (toTranslate.length === 0) {
     return { results, detectedLanguage: results.find(r => r !== null)?.originalLanguage || "" };
-  }
-
-  const unisonLang = await enrichViaUnison(
-    toTranslate,
-    targetLanguage,
-    request.sourceLanguage,
-    request.videoId,
-    signal
-  );
-  toTranslate = toTranslate.filter(({ index, text }) => {
-    const hit = cache.translation.get(`${targetLanguage}_${text}`);
-    if (hit) {
-      results[index] = hit;
-      return false;
-    }
-    return true;
-  });
-  if (toTranslate.length === 0) {
-    return { results, detectedLanguage: results.find(r => r !== null)?.originalLanguage || unisonLang || "" };
   }
 
   let detectedLanguage = "";
@@ -160,6 +64,12 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
 
   for (const item of toTranslate) {
     const itemEncoded = encodeURIComponent(item.text);
+    // A single line that cannot fit the URL budget on its own is skipped, not sent: Google would
+    // reject or truncate it. The line stays untranslated rather than silently mangled.
+    if (baseUrl.length + itemEncoded.length > MAX_URL_LENGTH) {
+      logCore(TRANSLATION_ERROR_LOG, `Skipping a line whose encoded length (${itemEncoded.length}) exceeds the URL budget`);
+      continue;
+    }
     const addedLength = (currentChunk.length > 0 ? separatorEncoded.length : 0) + itemEncoded.length;
 
     if (currentChunk.length > 0 && baseUrl.length + currentEncodedLength + addedLength > MAX_URL_LENGTH) {
@@ -214,7 +124,7 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
         const translatedText = translatedLines[i]?.trim();
         if (translatedText && translatedText.toLowerCase() !== item.text.toLowerCase()) {
           const result = { originalLanguage: detectedLanguage, translatedText };
-          cache.translation.set(`${targetLanguage}_${item.text}`, result);
+          translationCache.set(`${targetLanguage}_${item.text}`, result);
           results[item.index] = result;
         }
       });
@@ -228,151 +138,11 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
   return { results, detectedLanguage };
 }
 
-/**
- * Romanizes a batch of lyric lines in a single request, chunked if necessary.
- */
-export async function romanizeBatch(request: BatchRequest): Promise<BatchRomanizationResponse> {
-  const { lines, sourceLanguage, signal } = request;
-  if (lines.length === 0) {
-    return { results: lines.map(() => null), detectedLanguage: "" };
-  }
-
-  const results: (string | null)[] = new Array(lines.length).fill(null);
-  let toRomanize: { index: number; text: string }[] = [];
-
-  // Check cache first
-  lines.forEach((line, index) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed === "♪") return;
-
-    if (cache.romanization.has(trimmed)) {
-      results[index] = cache.romanization.get(trimmed)!;
-    } else {
-      toRomanize.push({ index, text: trimmed });
-    }
-  });
-
-  if (toRomanize.length === 0) {
-    return { results, detectedLanguage: sourceLanguage || "auto" };
-  }
-
-  let detectedLanguage = sourceLanguage || "auto";
-
-  const unisonLang = await enrichViaUnison(
-    toRomanize,
-    request.targetLanguage || "en",
-    sourceLanguage,
-    request.videoId,
-    signal
-  );
-  if (unisonLang) {
-    detectedLanguage = unisonLang;
-  }
-  toRomanize = toRomanize.filter(({ index, text }) => {
-    const hit = cache.romanization.get(text);
-    if (hit) {
-      results[index] = hit;
-      return false;
-    }
-    return true;
-  });
-  if (toRomanize.length === 0) {
-    return { results, detectedLanguage };
-  }
-
-  // Chunk toRomanize based on URL length limits
-  const chunks: { index: number; text: string }[][] = [];
-  let currentChunk: { index: number; text: string }[] = [];
-  let currentEncodedLength = 0;
-
-  const lang = sourceLanguage || "auto";
-  const baseUrl = TRANSLATE_IN_ROMAJI(lang, "");
-  const separatorEncoded = encodeURIComponent(BATCH_SEPARATOR);
-
-  for (const item of toRomanize) {
-    const itemEncoded = encodeURIComponent(item.text);
-    const addedLength = (currentChunk.length > 0 ? separatorEncoded.length : 0) + itemEncoded.length;
-
-    if (currentChunk.length > 0 && baseUrl.length + currentEncodedLength + addedLength > MAX_URL_LENGTH) {
-      chunks.push(currentChunk);
-      currentChunk = [];
-      currentEncodedLength = 0;
-    }
-
-    currentChunk.push(item);
-    currentEncodedLength += (currentChunk.length > 1 ? separatorEncoded.length : 0) + itemEncoded.length;
-  }
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk);
-  }
-
-  for (const chunk of chunks) {
-    try {
-      const combinedText = chunk.map(item => item.text).join(BATCH_SEPARATOR);
-      const url = TRANSLATE_IN_ROMAJI(lang, combinedText);
-
-      const response = await fetch(url, { cache: "force-cache", signal });
-      const data = await response.json();
-
-      detectedLanguage = data[2] || detectedLanguage;
-
-      let fullRomanizedText = "";
-      for (const part of data[0]) {
-        if (!part) continue;
-        const romanized = part[3] || part[2];
-        if (romanized) {
-          fullRomanizedText += romanized;
-        }
-      }
-
-      let romanizedLines = fullRomanizedText.split(BATCH_SEPARATOR);
-
-      // Fallback: If Google merged the romanizations into fewer blocks than expected
-      if (romanizedLines.length < chunk.length) {
-        const semicolonSplit = fullRomanizedText.split(";").filter(l => l.trim().length > 0);
-        if (semicolonSplit.length === chunk.length) {
-          romanizedLines = semicolonSplit;
-        } else {
-          const singleNewlineSplit = fullRomanizedText.split(/\r?\n/).filter(l => l.trim().length > 0);
-          if (singleNewlineSplit.length === chunk.length) {
-            romanizedLines = singleNewlineSplit;
-          } else if (romanizedLines.length === 1 && chunk.length > 1) {
-            logCore(
-              TRANSLATION_ERROR_LOG,
-              `Batch romanization failed to split: expected ${chunk.length} lines, got 1.`
-            );
-            romanizedLines = [];
-          }
-        }
-      }
-
-      chunk.forEach((item, i) => {
-        const romanizedText = romanizedLines[i]?.trim();
-        if (romanizedText && romanizedText.toLowerCase() !== item.text.toLowerCase()) {
-          cache.romanization.set(item.text, romanizedText);
-          results[item.index] = romanizedText;
-        }
-      });
-    } catch (error) {
-      if ((error as Error).name !== "AbortError") {
-        logCore(TRANSLATION_ERROR_LOG, error);
-      }
-    }
-  }
-
-  return { results, detectedLanguage };
-}
-
 export function clearCache(): void {
-  cache.romanization.clear();
-  cache.translation.clear();
+  translationCache.clear();
 }
 
 export function getTranslationFromCache(text: string, targetLanguage: string): TranslationResult | null {
   const cacheKey = `${targetLanguage}_${text.trim()}`;
-  return cache.translation.get(cacheKey) || null;
-}
-
-export function getRomanizationFromCache(text: string): string | null {
-  return cache.romanization.get(text.trim()) || null;
+  return translationCache.get(cacheKey) || null;
 }

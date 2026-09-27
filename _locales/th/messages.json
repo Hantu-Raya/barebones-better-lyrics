@@ -327,10 +327,6 @@
     "message": "การตั้งค่าภาษาและการแปลสำหรับ Better Lyrics",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "การถอดเสียง",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "แปลเนื้อเพลง",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "การยกเว้นบางภาษา",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "การถอดเสียงร้อง",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "การแปล",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "ค้นหาภาษา...",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "กดเพื่อเปิด/ปิด ภาษาที่ถูกยกเว้นจะไม่ถูกถอดเสียง",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "กดเพื่อเปิด/ปิด ภาษาต้นทางที่ถูกยกเว้นไว้จะไม่ถูกแปล",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "รีเซ็ตข้อยกเว้น$TYPE$",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "การดำเนินการนี้จะลบการยกเว้นบางภาษาออกทั้งหมด ดำเนินการต่อหรือไม่",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "ยกเลิก",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "รีเซ็ตการยกเว้น$TYPE$กลับเป็นค่าปริยาย",
     "description": "Success message after resetting exclusions",
     "placeholders": {

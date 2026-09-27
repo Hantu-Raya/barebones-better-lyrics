@@ -327,10 +327,6 @@
     "message": "Better Lyrics 的语言和翻译设置。",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "罗马化",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "翻译歌词",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "语言排除",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "罗马化",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "翻译",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "搜索语言…",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "点击即可切换。排除的语言将不会被罗马化。",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "点击即可切换。排除的源语言将不会被翻译。",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "重置$TYPE$排除项",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "这将清除所有已排除的语言。继续吗？",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "取消",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "$TYPE$排除项已重置为默认值",
     "description": "Success message after resetting exclusions",
     "placeholders": {

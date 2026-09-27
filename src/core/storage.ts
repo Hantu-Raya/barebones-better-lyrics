@@ -1,6 +1,4 @@
 import { LYRIC_SOURCE_KEYS, OFFSET_STORAGE_PREFIX, STORAGE_TRANSIENT_SET_LOG } from "@constants";
-import { truncateSource } from "@utils";
-import { compileWithDetails } from "rics";
 import { compressString, decompressString, isCompressed } from "./compression";
 import { logCore, logError } from "@core/logger";
 
@@ -29,75 +27,10 @@ export async function getSyncStorage<T>(keys: string | string[] | null): Promise
   return (await chrome.storage.sync.get(keys as string[])) as unknown as T;
 }
 
-export const STORE_THEME_PREFIX = "store:";
-
-/** Null once edited: editing drops themeName but leaves activeStoreTheme set. */
-export async function getAppliedStoreThemeId(): Promise<string | null> {
-  const { themeName } = await getSyncStorage<{ themeName?: string }>(["themeName"]);
-  if (!themeName?.startsWith(STORE_THEME_PREFIX)) return null;
-  return themeName.slice(STORE_THEME_PREFIX.length) || null;
-}
-
 interface TransientStorageItem {
   type: "transient";
   value: any;
   expiry: number;
-}
-
-const COMPILE_TIMEOUT = 3000;
-const MAX_ITERATIONS = 10000;
-const HARD_TIMEOUT = 5000;
-
-export function compileRicsToStyles(sourceCode: string): string {
-  try {
-    const startTime = performance.now();
-    const result = compileWithDetails(sourceCode, {
-      timeout: COMPILE_TIMEOUT,
-      maxIterations: MAX_ITERATIONS,
-    });
-    const elapsed = performance.now() - startTime;
-
-    if (elapsed > HARD_TIMEOUT) {
-      logError(`rics compilation timeout: took ${elapsed.toFixed(0)}ms\nSource:\n${truncateSource(sourceCode)}`);
-      return sourceCode;
-    }
-
-    if (result.errors.length > 0) {
-      logError(`rics compilation errors: ${JSON.stringify(result.errors)}\nSource:\n${truncateSource(sourceCode)}`);
-      return sourceCode;
-    }
-    return result.css;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logError(`rics compilation failed: ${message}\nSource:\n${truncateSource(sourceCode)}`);
-    return sourceCode;
-  }
-}
-
-export async function loadChunkedStyles(): Promise<string | null> {
-  const metadata = await getLocalStorage<{ customCSS_chunked?: boolean; customCSS_chunkCount?: number }>([
-    "customCSS_chunked",
-    "customCSS_chunkCount",
-  ]);
-
-  if (!metadata.customCSS_chunked || !metadata.customCSS_chunkCount) {
-    return null;
-  }
-
-  const chunkKeys = Array.from({ length: metadata.customCSS_chunkCount }, (_, i) => `customCSS_chunk_${i}`);
-  const chunksData = await getLocalStorage<Record<string, string>>(chunkKeys);
-
-  const chunks: string[] = [];
-  for (let i = 0; i < metadata.customCSS_chunkCount; i++) {
-    const chunk = chunksData[`customCSS_chunk_${i}`];
-    if (!chunk) {
-      logError(`Missing CSS chunk ${i}`);
-      return null;
-    }
-    chunks.push(chunk);
-  }
-
-  return chunks.join("");
 }
 
 /**

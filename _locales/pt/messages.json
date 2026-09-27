@@ -327,10 +327,6 @@
     "message": "Configurações de idioma e tradução para Better Lyrics.",
     "description": "Language settings section description"
   },
-  "options_language_romanization": {
-    "message": "Romanização",
-    "description": "Romanization setting label"
-  },
   "options_language_translate": {
     "message": "Traduzir letras das músicas",
     "description": "Translate song lyrics setting label"
@@ -1143,10 +1139,6 @@
     "message": "Exclusões de Idioma",
     "description": "Modal title for language exclusions"
   },
-  "options_romanization_tab": {
-    "message": "Romanização",
-    "description": "Romanization tab label"
-  },
   "options_translation_tab": {
     "message": "Tradução",
     "description": "Translation tab label"
@@ -1154,10 +1146,6 @@
   "options_searchLanguages": {
     "message": "Pesquisar idiomas...",
     "description": "Search input placeholder"
-  },
-  "options_romanization_hint": {
-    "message": "Click to toggle. Excluded languages will not be romanized.",
-    "description": "Hint text for romanization exclusions"
   },
   "options_translation_hint": {
     "message": "Click to toggle. Excluded source languages will not be translated.",
@@ -1173,7 +1161,7 @@
       }
     }
   },
-  "options_romanization_resetTitle": {
+  "options_langExclusions_resetTitle": {
     "message": "Reset $TYPE$ Exclusions",
     "description": "Modal title for resetting exclusions",
     "placeholders": {
@@ -1183,7 +1171,7 @@
       }
     }
   },
-  "options_romanization_resetMessage": {
+  "options_langExclusions_resetMessage": {
     "message": "This will clear all excluded languages. Continue?",
     "description": "Confirmation message for resetting exclusions"
   },
@@ -1195,7 +1183,7 @@
     "message": "Cancel",
     "description": "Cancel button label"
   },
-  "options_romanization_resetSuccess": {
+  "options_langExclusions_resetSuccess": {
     "message": "$TYPE$ exclusions reset to default",
     "description": "Success message after resetting exclusions",
     "placeholders": {

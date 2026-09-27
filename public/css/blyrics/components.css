@@ -633,7 +633,7 @@ ytmusic-player-page:not([is-mweb-modernization-enabled]) #side-panel.blyrics-has
 }
 
 .blyrics-dock__controls {
-	/* The translate/romanize pills inherit the sync-type accent but more saturated, so they
+	/* The translate pill inherits the sync-type accent but more saturated, so it
 	   don't wash out. --dock-accent itself stays pastel for the source slot and dropdown. */
 	--dock-pill-accent: oklch(from var(--dock-accent, hsl(45, 100%, 56%)) l calc(c * 1.85) h);
 	opacity: 0.72;
