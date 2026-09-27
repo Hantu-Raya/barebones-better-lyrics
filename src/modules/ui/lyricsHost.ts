@@ -3,7 +3,6 @@ import { seekPlayer } from "@modules/lyrics/lyrics";
 import { hideAdOverlay, isAdPlaying, isLoaderActive, showAdOverlay } from "@modules/ui/dom";
 import { getResumeScrollElement } from "@modules/ui/resumeScrollButton";
 import type { LyricsRendererHost } from "@braccato/core";
-import { resetDebugRender, resizeCanvas } from "./animationEngineDebug";
 import { type LogSink, logCore } from "@core/logger";
 
 const PLAYER_PAGE_ID = "player-page";
@@ -59,5 +58,4 @@ export const ytmHost: LyricsRendererHost = {
   get log(): LogSink {
     return logCore;
   },
-  debug: { beginFrame: resetDebugRender, resize: resizeCanvas },
 };

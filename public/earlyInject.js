@@ -92,41 +92,12 @@ export default function initializeRequestInterceptor() {
   const handleReplayRequest = () => replaySniffResponses();
   document.addEventListener(REQUEST_REPLAY_EVENT, handleReplayRequest);
 
-  // -- English byline override --------------------------
-  function dispatchSniffResponse(url, requestJson, responseJson, status, localizedResponseJson) {
-    const detail = { url, requestJson, responseJson, localizedResponseJson, status, timestamp: Date.now() };
+  // Passive observation only: the page's own /next and /browse responses are read and never
+  // re-requested (no English-locale re-fetch).
+  function dispatchSniffResponse(url, requestJson, responseJson, status) {
+    const detail = { url, requestJson, responseJson, status, timestamp: Date.now() };
     rememberSniffResponse(detail);
     emitSniffResponse(detail);
-  }
-
-  /**
-   * Re-fetches a /next request forcing the English locale so the request sniffer reads
-   * canonical (non-localized) artist and album names. Reuses the page's auth via originalFetch.
-   *
-   * @param {string} url - Original /next request URL
-   * @param {string} requestBodyText - Original request body (JSON string)
-   * @param {Headers} headers - Original request headers
-   * @returns {Promise<object>} Parsed English /next response
-   */
-  async function fetchEnglishNext(url, requestBodyText, headers) {
-    const body = JSON.parse(requestBodyText);
-    if (!body?.context?.client) {
-      throw new Error("Missing client context");
-    }
-    body.context.client.hl = "en";
-
-    const englishUrl = url.replace(/([?&]hl=)[^&]+/i, "$1en");
-    const englishHeaders = new Headers(headers);
-    englishHeaders.delete("content-encoding");
-    englishHeaders.delete("content-length");
-
-    const response = await originalFetch(englishUrl, {
-      method: "POST",
-      headers: englishHeaders,
-      body: JSON.stringify(body),
-      credentials: "include",
-    });
-    return response.json();
   }
 
   /**
@@ -202,48 +173,27 @@ export default function initializeRequestInterceptor() {
               // No need to parse requestJson if it wasn't a POST, but the empty object handles it gracefully
               requestJson = JSON.parse(awaitedTexts[0]);
             } catch (e) {
-              console.error("Better Lyrics: Error parsing request JSON for URL:", urlString, e);
+              console.error("Better Lyrics: Error parsing request JSON", e);
               requestJson = { error: "Failed to parse request JSON" };
             }
             try {
               responseJson = JSON.parse(awaitedTexts[1]);
             } catch (e) {
-              console.error(
-                "Better Lyrics: Error parsing response JSON for URL:",
-                clonedResponseForJson.url || urlString,
-                e
-              );
+              console.error("Better Lyrics: Error parsing response JSON", e);
               responseJson = { error: "Failed to parse response JSON" };
             }
 
             const eventUrl = clonedResponseForJson.url || urlString;
             const status = clonedResponseForJson.status;
-            const isNext = urlString.startsWith("https://music.youtube.com/youtubei/v1/next");
-            const origHl = requestJson?.context?.client?.hl;
-
-            if (isNext && origHl && origHl !== "en") {
-              fetchEnglishNext(urlString, awaitedTexts[0], originalRequestForJson.headers).then(
-                englishJson => dispatchSniffResponse(eventUrl, requestJson, englishJson, status, responseJson),
-                error => {
-                  console.error("Better Lyrics: English /next fetch failed, using localized response:", error);
-                  dispatchSniffResponse(eventUrl, requestJson, responseJson, status);
-                }
-              );
-            } else {
-              dispatchSniffResponse(eventUrl, requestJson, responseJson, status);
-            }
+            dispatchSniffResponse(eventUrl, requestJson, responseJson, status);
           })
           .catch(error => {
-            console.error(
-              "Better Lyrics: Error in Promise.all processing:",
-              error,
-              clonedResponseForJson.url || urlString
-            );
+            console.error("Better Lyrics: Error processing response", error);
           });
 
         return response; // Return the original response fetched
       } catch (error) {
-        console.error("Better Lyrics: Error in fetch wrapper for URL:", urlString, error);
+        console.error("Better Lyrics: Error in fetch wrapper", error);
         return originalFetch(request, init); // Fallback to original fetch on error
       }
     } else {

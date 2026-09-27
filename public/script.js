@@ -88,8 +88,8 @@ export default function initializePlayerBridge() {
           },
         })
       );
-    } catch (error) {
-      console.log(error);
+    } catch {
+      // Player API not ready yet; the next snapshot retries.
     }
   };
 
@@ -191,27 +191,7 @@ export default function initializePlayerBridge() {
     }
   };
 
-  const handlePlayerControl = event => {
-    const player = document.getElementById("movie_player");
-    if (!player) return;
-    switch (event.detail) {
-      case "previous":
-        if (typeof player.previousVideo === "function") player.previousVideo();
-        break;
-      case "play-pause": {
-        const playing = player.getPlayerStateObject?.().isPlaying === true;
-        if (playing) player.pauseVideo();
-        else player.playVideo();
-        break;
-      }
-      case "next":
-        if (typeof player.nextVideo === "function") player.nextVideo();
-        break;
-    }
-  };
-
   document.addEventListener("blyrics-seek-to", handleSeek);
-  document.addEventListener("blyrics-player-control", handlePlayerControl);
 
   checkPlayerAndPublish();
   snapshotInterval = setInterval(checkPlayerAndPublish, PLAYER_SNAPSHOT_INTERVAL_MS);
@@ -220,7 +200,6 @@ export default function initializePlayerBridge() {
     stopPlayerBridge();
     window.removeEventListener("unload", stopPlayerBridge);
     document.removeEventListener("blyrics-seek-to", handleSeek);
-    document.removeEventListener("blyrics-player-control", handlePlayerControl);
     document.documentElement.style.removeProperty("--blyrics-video-aspect-ratio");
   };
 }

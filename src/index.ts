@@ -1,49 +1,26 @@
-import { INITIALIZE_LOG } from "@constants";
-import { AppState } from "@core/appState";
 import { injectI18nCssVars, loadLocaleOverride, subscribeToLocaleChanges } from "@core/i18n";
 import { purgeExpiredKeys, saveCacheInfo } from "@core/storage";
 import { initProviders } from "@modules/lyrics/providers/shared";
 import { setupRequestSniffer } from "@modules/lyrics/requestSniffer/requestSniffer";
 import {
-  handleSettings,
-  hideCursorOnIdle,
-  hideDockOnIdleInFullscreen,
-  listenForPopupMessages,
-  loadDockSettings,
-  loadEndTimeModeSetting,
+  listenForSettingsChanges,
   loadLyricOffsetSettings,
   loadPassiveScrollSetting,
   loadTranslationSettings,
-  onAlbumArtEnabled,
 } from "@modules/settings/settings";
+import { cleanup as cleanupLyrics, injectHeadTags, observeLyricsPageType, setupAdObserver, unmountDock } from "@modules/ui/dom";
 import {
-  cleanup as cleanupLyrics,
-  injectHeadTags,
-  observeLyricsPageType,
-  reloadAlbumArt,
-  setupAdObserver,
-  unmountDock,
-} from "@modules/ui/dom";
-import {
-  disableInertWhenFullscreen,
   enableLyricsTab,
   initializeLyrics,
   lyricReloader,
   setUpAvButtonListener,
   setupAltHoverHandler,
-  setupHomepageFullscreenHandler,
-  setupWakeLockForFullscreen,
 } from "@modules/ui/observer";
-import { applyLoggingSetting } from "@modules/settings/settings";
-import { logCore } from "@core/logger";
 
 /**
- * Initializes the BetterLyrics extension by setting up all required components.
- * This method orchestrates the setup of logging, DOM injection, observers, settings,
- * storage, and lyric providers.
+ * Initializes the extension: local styles, locale, observers, settings, storage and providers.
  */
 async function modify(isDisposed: () => boolean): Promise<void> {
-  applyLoggingSetting();
   await injectHeadTags();
   if (isDisposed()) return;
   await loadLocaleOverride();
@@ -53,39 +30,17 @@ async function modify(isDisposed: () => boolean): Promise<void> {
   setupAdObserver();
   enableLyricsTab();
   observeLyricsPageType();
-  setupHomepageFullscreenHandler();
-  hideCursorOnIdle();
-  handleSettings();
-  setupWakeLockForFullscreen();
   loadTranslationSettings();
-  loadEndTimeModeSetting();
   loadLyricOffsetSettings();
   loadPassiveScrollSetting();
-  loadDockSettings(hideDockOnIdleInFullscreen);
   await purgeExpiredKeys();
   await saveCacheInfo();
-  listenForPopupMessages();
+  listenForSettingsChanges();
   lyricReloader();
   initializeLyrics();
-  disableInertWhenFullscreen();
   setupAltHoverHandler();
   initProviders();
   setUpAvButtonListener();
-  logCore(
-    INITIALIZE_LOG,
-    "background: rgba(10,11,12,1) ; color: rgba(214, 250, 214,1) ; padding: 0.5rem 0.75rem; border-radius: 0.5rem; font-size: 1rem; "
-  );
-
-  onAlbumArtEnabled(
-    () => {
-      AppState.shouldInjectAlbumArt = true;
-      reloadAlbumArt();
-    },
-    () => {
-      AppState.shouldInjectAlbumArt = false;
-      reloadAlbumArt();
-    }
-  );
 }
 
 /**

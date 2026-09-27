@@ -1,4 +1,4 @@
-import { DOCK_CLASS, PROVIDER_CONFIGS } from "@constants";
+import { DOCK_CLASS, DOCK_CONTROL_ORDER_DEFAULT, PROVIDER_CONFIGS } from "@constants";
 import { AppState, refreshCurrentSong, reloadLyrics } from "@core/appState";
 import { attachHoldRepeat } from "@core/holdRepeat";
 import { t } from "@core/i18n";
@@ -438,16 +438,15 @@ function buildOffsetRowStep(icon: string, label: string, onClick: (event: MouseE
   return btn;
 }
 
-// Each dock control is built on demand and only when it can act, so the order list can
-// place them in any sequence the user picked in options.
+// The dock is fixed: every control is built on demand and only when it can act.
 const controlBuilders: Record<string, () => HTMLElement | null> = {
-  source: () => (AppState.isDockSourceEnabled ? buildSourceSlot() : null),
+  source: () => buildSourceSlot(),
   translate: () =>
-    hasLyrics() && AppState.isDockTranslateEnabled
+    hasLyrics()
       ? buildToggle(controlIcons.translate, AppState.isTranslateEnabled, t("options_translation_tab"), toggleTranslate)
       : null,
-  offset: () => (isSynced() && AppState.isDockOffsetEnabled ? buildOffsetControl() : null),
-  refresh: () => (hasLyrics() && AppState.isDockRefreshEnabled ? buildRefreshControl() : null),
+  offset: () => (isSynced() ? buildOffsetControl() : null),
+  refresh: () => (hasLyrics() ? buildRefreshControl() : null),
 };
 
 function buildDivider(): HTMLElement {
@@ -469,7 +468,7 @@ export function buildControlsSegment(): HTMLElement {
   const sections: HTMLElement[] = [];
   const shape: string[] = [];
 
-  for (const key of AppState.dockControlsOrder) {
+  for (const key of DOCK_CONTROL_ORDER_DEFAULT) {
     const section = controlBuilders[key]?.();
     if (section) {
       sections.push(section);

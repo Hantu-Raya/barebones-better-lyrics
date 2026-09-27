@@ -15,9 +15,7 @@
 	   ancestor sits in :where() so the selector weighs exactly what a bare .blyrics-container:before
 	   weighs, which is what published themes override it at. */
 	:where(ytmusic-app-layout) .blyrics-container:before {
-		background:
-			linear-gradient(to right, #030303 4rem, rgba(3, 3, 3, 0.5), #030303 96%),
-			var(--blyrics-background-img) !important;
+		background: linear-gradient(to right, #030303 4rem, rgba(3, 3, 3, 0.5), #030303 96%) !important;
 		background-position: 50% !important;
 		background-size: cover !important;
 		border-radius: 1rem;
@@ -52,21 +50,4 @@
 }
 
 /* Fullscreen autoscroll button fix */
-ytmusic-app-layout[player-fullscreened]:not([blyrics-dfs]) .autoscroll-resume-wrapper {
-	position: fixed;
-	top: 1rem;
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 1000;
-	width: fit-content;
-}
 
-ytmusic-app-layout[player-fullscreened]:not([blyrics-dfs]) .autoscroll-resume-button {
-	position: relative;
-	left: unset;
-	transform: none;
-}
-
-ytmusic-app-layout[player-fullscreened]:not([blyrics-dfs]) .autoscroll-resume-button[autoscroll-hidden="true"] {
-	transform: translateY(-3rem);
-}

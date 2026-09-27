@@ -4,7 +4,6 @@
   "default_locale": "en",
   "name": "Barebones Better Lyrics",
   "description": "__MSG_extensionDescription__",
-  "homepage_url": "https://github.com/Hantu-Raya/barebones-better-lyrics",
   "icons": {
     "16": "images/icons/icon-16.png",
     "48": "images/icons/icon-48.png",
@@ -18,7 +17,7 @@
     "storage"
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://cdn.fontshare.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';"
+    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'"
   },
   "options_ui": {
     "page": "src/options/options.html",

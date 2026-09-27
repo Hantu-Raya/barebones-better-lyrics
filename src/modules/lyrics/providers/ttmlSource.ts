@@ -1,5 +1,4 @@
 import { parseTTMLContent } from "@braccato/parsers";
-import { HOMEPAGE_DOMAIN, HOMEPAGE_URL } from "@constants";
 import type { LyricSourceKey, LyricSourceResult, ProviderParameters } from "@modules/lyrics/providers/shared";
 import { logCore } from "@core/logger";
 
@@ -17,8 +16,8 @@ export function fillTtml(
   options: FillTtmlOptions = {
     richsyncKey: "bLyrics-richsynced",
     syncedKey: "bLyrics-synced",
-    source: HOMEPAGE_DOMAIN,
-    sourceHref: HOMEPAGE_URL,
+    source: "Better Lyrics",
+    sourceHref: "",
     cacheAllowed: true,
   }
 ) {

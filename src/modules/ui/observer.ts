@@ -1,6 +1,4 @@
 import {
-  AUTO_SWITCH_ENABLED_LOG,
-  FULLSCREEN_BUTTON_SELECTOR,
   LYRICS_TAB_CLICKED_LOG,
   LYRICS_WRAPPER_ID,
   SONG_SWITCHED_LOG,
@@ -9,45 +7,19 @@ import {
   TAB_RENDERER_SELECTOR,
 } from "@constants";
 import { AppState, handleModifications, type PlayerDetails, reloadLyrics } from "@core/appState";
-import { preFetchLyrics } from "@modules/lyrics/lyrics";
-import { getArtworkMetadata, getSongAlbum, getSongMetadata } from "@modules/lyrics/requestSniffer/requestSniffer";
-import { onAutoSwitchEnabled, onFullScreenDisabled, wakeDockIdle } from "@modules/settings/settings";
 import { adjustLyricOffset, OFFSET_STEP, OFFSET_STEP_LARGE } from "@modules/ui/lyricsDock/offset";
 import { currentTickOptions, mainView } from "@modules/ui/mainLyricsView";
-import { revealQueueAutoplaySection } from "@modules/ui/queueAutoplay";
-import {
-  closePlayerPageIfOpenedForFullscreen,
-  isNavigating,
-  isPlayerPageOpen,
-  openPlayerPageForFullscreen,
-} from "@modules/ui/navigation";
 import { getResumeScrollElement } from "@modules/ui/resumeScrollButton";
-import { logCore, logError } from "@core/logger";
-import {
-  addThumbnail,
-  cleanup,
-  injectSongAttributes,
-  preloadHighResThumbnail,
-  renderLoader,
-  resetThumbnailState,
-  showYtThumbnail,
-  updateFullscreenControlsSnapshot,
-} from "./dom";
-
-let wakeLock: WakeLockSentinel | null = null;
+import { logCore } from "@core/logger";
+import { cleanup, renderLoader } from "./dom";
 
 // -- Observer Storage & Init Guards --------------------------
-let fullscreenObserver: MutationObserver | null = null;
 let lyricsTabObserver: MutationObserver | null = null;
-let inertObserver: MutationObserver | null = null;
-let fullscreenExitObserver: MutationObserver | null = null;
 let avButtonObserver: MutationObserver | null = null;
 
 let hasInitializedLyricReloader = false;
-let hasInitializedHomepageFullscreen = false;
 let hasInitializedAltHover = false;
 let hasInitializedLyrics = false;
-let metadataAbortController: AbortController | null = null;
 const ANIMATION_ENGINE_INTERVAL_MS = 20;
 let animationFrameRequest: number | null = null;
 let lastAnimationEngineRun = -Infinity;
@@ -86,89 +58,6 @@ function startAnimationFrameLoop(): void {
   animationFrameRequest = requestAnimationFrame(animationFrameLoop);
 }
 
-async function requestWakeLock(): Promise<void> {
-  if (!("wakeLock" in navigator)) {
-    logError("Wake Lock API not supported in this browser.");
-    return;
-  }
-
-  try {
-    wakeLock = await navigator.wakeLock.request("screen");
-    wakeLock.addEventListener("release", () => {
-      wakeLock = null;
-    });
-  } catch (err) {
-    logError("Wake Lock request failed:", err);
-  }
-}
-
-function handleVisibilityChange(): void {
-  if (document.visibilityState === "visible" && wakeLock === null) {
-    requestWakeLock();
-  }
-}
-
-function initWakeLock(): void {
-  requestWakeLock();
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-}
-
-function cleanupWakeLock(): void {
-  if (wakeLock) {
-    wakeLock.release();
-    wakeLock = null;
-  }
-  document.removeEventListener("visibilitychange", handleVisibilityChange);
-}
-
-type FullscreenCallback = () => void;
-
-const fullscreenEnterCallbacks: FullscreenCallback[] = [];
-const fullscreenExitCallbacks: FullscreenCallback[] = [];
-
-function ensureFullscreenObserver(): void {
-  if (fullscreenObserver) return;
-
-  const appLayout = document.querySelector("ytmusic-app-layout");
-  if (!appLayout) {
-    setTimeout(ensureFullscreenObserver, 1000);
-    return;
-  }
-
-  let wasFullscreen = appLayout.hasAttribute("player-fullscreened");
-
-  fullscreenObserver = new MutationObserver(() => {
-    const isFullscreen = appLayout.hasAttribute("player-fullscreened");
-
-    if (!wasFullscreen && isFullscreen) {
-      fullscreenEnterCallbacks.forEach(cb => cb());
-    } else if (wasFullscreen && !isFullscreen) {
-      fullscreenExitCallbacks.forEach(cb => cb());
-    }
-
-    wasFullscreen = isFullscreen;
-  });
-
-  fullscreenObserver.observe(appLayout, { attributes: true, attributeFilter: ["player-fullscreened"] });
-}
-
-export function onFullscreenChange(onEnter: FullscreenCallback, onExit: FullscreenCallback): void {
-  fullscreenEnterCallbacks.push(onEnter);
-  fullscreenExitCallbacks.push(onExit);
-  ensureFullscreenObserver();
-}
-
-export function isPlayerFullscreened(): boolean {
-  return document.querySelector("ytmusic-app-layout")?.hasAttribute("player-fullscreened") ?? false;
-}
-
-export function setupWakeLockForFullscreen(): void {
-  onFullscreenChange(
-    () => initWakeLock(),
-    () => cleanupWakeLock()
-  );
-}
-
 /**
  * Enables the lyrics tab and prevents it from being disabled by YouTube Music.
  * Sets up a MutationObserver to watch for attribute changes.
@@ -198,46 +87,6 @@ export function enableLyricsTab(): void {
     });
   });
   lyricsTabObserver.observe(tabSelector, { attributes: true });
-}
-
-/**
- * Disables the inert attribute on the side panel when entering fullscreen.
- * Ensures lyrics tab remains accessible in fullscreen mode.
- */
-export function disableInertWhenFullscreen(): void {
-  const panelElem = document.getElementById("side-panel");
-  if (!panelElem) {
-    setTimeout(() => {
-      disableInertWhenFullscreen();
-    }, 1000);
-    return;
-  }
-
-  if (inertObserver) {
-    inertObserver.disconnect();
-  }
-
-  inertObserver = new MutationObserver(mutations => {
-    onFullScreenDisabled(
-      () => {},
-      () =>
-        mutations.forEach(mutation => {
-          if (mutation.attributeName === "inert") {
-            (mutation.target as HTMLElement).removeAttribute("inert");
-            const tabSelector = document.getElementsByClassName(TAB_HEADER_CLASS)[1] as HTMLElement;
-            if (tabSelector && tabSelector.getAttribute("aria-selected") !== "true") {
-              tabSelector.click();
-              currentTab = 1;
-              if (AppState.areLyricsLoaded) {
-                AppState.areLyricsTicking = true;
-              }
-            }
-          }
-        })
-    );
-  });
-  inertObserver.observe(panelElem, { attributes: true });
-  panelElem.removeAttribute("inert");
 }
 
 let currentTab = 0;
@@ -293,7 +142,6 @@ export function lyricReloader(): void {
     };
 
     tab1.addEventListener("click", onNonLyricTabClick);
-    tab1.addEventListener("click", revealQueueAutoplaySection);
     tab3.addEventListener("click", onNonLyricTabClick);
   } else {
     setTimeout(() => lyricReloader(), 1000);
@@ -328,14 +176,6 @@ export function initializeLyrics(): void {
     latestPlayerDuration = Number(detail.duration);
     latestPlaybackRate = detail.playbackRate ?? 1;
 
-    updateFullscreenControlsSnapshot({
-      currentTimeS: detail.currentTime,
-      durationS: Number(detail.duration),
-      playbackRate: detail.playbackRate ?? 1,
-      isPlaying: detail.playing,
-      wallTime: detail.browserTime,
-    });
-
     const currentVideoId = detail.videoId;
     const currentVideoDetails = detail.song + " " + detail.artist;
 
@@ -343,7 +183,6 @@ export function initializeLyrics(): void {
       AppState.areLyricsTicking = false;
       AppState.lastVideoId = currentVideoId;
       AppState.lastVideoDetails = currentVideoDetails;
-      resetThumbnailState();
       if (!detail.song || !detail.artist) {
         logCore("Lyrics switched: Still waiting for metadata ", detail.videoId);
         return;
@@ -351,62 +190,6 @@ export function initializeLyrics(): void {
       logCore(SONG_SWITCHED_LOG, detail.videoId);
 
       AppState.queueLyricInjection = true;
-      AppState.queueSongDetailsInjection = true;
-      AppState.hasPreloadedNextSong = false;
-
-      metadataAbortController?.abort();
-      const abortController = new AbortController();
-      metadataAbortController = abortController;
-
-      const videoIdAtStart = detail.videoId;
-      getArtworkMetadata(detail.videoId, 250, abortController.signal).then(songMetadata => {
-        if (AppState.lastVideoId !== videoIdAtStart) return;
-
-        if (songMetadata) {
-          addThumbnail(songMetadata.smallThumbnail);
-        } else {
-          showYtThumbnail();
-        }
-      });
-    }
-
-    if (AppState.areLyricsTicking && AppState.areLyricsLoaded && !AppState.hasPreloadedNextSong) {
-      AppState.hasPreloadedNextSong = true;
-      logCore("Trying to preload next song");
-      getSongMetadata(AppState.lastVideoId).then(async data => {
-        if (data && data.nextVideoId) {
-          let next = await getSongMetadata(data.nextVideoId);
-          if ((!next || next.isVideo) && data.counterpartVideoId) {
-            // try to find the next counterpart
-            next = await getSongMetadata(data.counterpartVideoId).then(counterpart =>
-              counterpart?.nextVideoId ? getSongMetadata(counterpart.nextVideoId) : null
-            );
-          }
-
-          if (next) {
-            preloadHighResThumbnail(next.smallThumbnail);
-            await preFetchLyrics(
-              {
-                song: next.title,
-                artist: next.artist,
-                duration: String(Math.round(next.durationMs / 1000)),
-                videoId: next.id,
-              },
-              next.isVideo
-            );
-          }
-        }
-      });
-    }
-
-    if (AppState.queueSongDetailsInjection && detail.song && detail.artist && document.getElementById("main-panel")) {
-      AppState.queueSongDetailsInjection = false;
-      injectSongAttributes(detail.song, detail.artist);
-      void getSongAlbum(detail.videoId).then(album => {
-        if (album && document.getElementById("blyrics-title")?.textContent === detail.song) {
-          injectSongAttributes(detail.song, detail.artist, album);
-        }
-      });
     }
 
     if (AppState.lyricInjectionFailed) {
@@ -421,13 +204,6 @@ export function initializeLyrics(): void {
       if (tabSelector) {
         AppState.queueLyricInjection = false;
         AppState.lyricInjectionFailed = false;
-        if (tabSelector.getAttribute("aria-selected") !== "true") {
-          onAutoSwitchEnabled(() => {
-            tabSelector.click();
-            logCore(AUTO_SWITCH_ENABLED_LOG);
-            getResumeScrollElement().classList.remove("blyrics-hidden");
-          });
-        }
         handleModifications(detail);
       }
     }
@@ -451,125 +227,6 @@ export function scrollEventHandler(): void {
   }
 
   mainView.noteUserScroll();
-}
-
-/**
- * Sets up a keyboard handler to intercept 'f' key presses on non-player pages.
- * When pressed, navigates to the player page first, then triggers fullscreen.
- * This ensures Better Lyrics can display properly in fullscreen mode.
- * Also sets up a listener to return to the previous view when exiting fullscreen.
- */
-export function setupHomepageFullscreenHandler(): void {
-  if (hasInitializedHomepageFullscreen) {
-    return;
-  }
-  hasInitializedHomepageFullscreen = true;
-
-  document.addEventListener(
-    "keydown",
-    (event: KeyboardEvent) => {
-      if (event.key !== "f" && event.key !== "F") {
-        return;
-      }
-
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return;
-      }
-
-      const target = event.target as HTMLElement;
-      const isTypingInInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-
-      if (isTypingInInput) {
-        return;
-      }
-
-      interceptFullscreenAction(event);
-    },
-    { capture: true }
-  );
-
-  setupFullscreenExitListener();
-  setupMiniplayerFullscreenHandler();
-}
-
-function interceptFullscreenAction(event: Event): void {
-  if (isPlayerPageOpen()) {
-    return;
-  }
-
-  if (!AppState.lastVideoId) {
-    return;
-  }
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  if (event instanceof KeyboardEvent) {
-    event.stopImmediatePropagation();
-  }
-
-  if (isNavigating()) {
-    return;
-  }
-
-  openPlayerPageForFullscreen().then(() => {
-    triggerFullscreen();
-  });
-}
-
-function setupFullscreenExitListener(): void {
-  const appLayout = document.querySelector("ytmusic-app-layout");
-  if (!appLayout) {
-    setTimeout(setupFullscreenExitListener, 1000);
-    return;
-  }
-
-  if (fullscreenExitObserver) {
-    fullscreenExitObserver.disconnect();
-  }
-
-  let wasFullscreen = false;
-
-  fullscreenExitObserver = new MutationObserver(() => {
-    const currentState = appLayout.getAttribute("player-ui-state");
-    const isFullscreen = currentState === "FULLSCREEN";
-
-    if (wasFullscreen && !isFullscreen) {
-      closePlayerPageIfOpenedForFullscreen();
-    }
-
-    wasFullscreen = isFullscreen;
-  });
-
-  fullscreenExitObserver.observe(appLayout, { attributes: true, attributeFilter: ["player-ui-state"] });
-}
-
-function triggerFullscreen(): void {
-  const fullscreenButton = document.querySelector(FULLSCREEN_BUTTON_SELECTOR) as HTMLElement;
-
-  if (fullscreenButton) {
-    fullscreenButton.click();
-  } else {
-    const keyEvent = new KeyboardEvent("keydown", {
-      key: "f",
-      code: "KeyF",
-      keyCode: 70,
-      which: 70,
-      bubbles: true,
-      cancelable: true,
-    });
-    document.dispatchEvent(keyEvent);
-  }
-}
-
-function setupMiniplayerFullscreenHandler(): void {
-  const fullscreenButton = document.querySelector("#song-media-window .fullscreen-button") as HTMLElement;
-  if (!fullscreenButton) {
-    setTimeout(setupMiniplayerFullscreenHandler, 1000);
-    return;
-  }
-
-  fullscreenButton.addEventListener("click", interceptFullscreenAction, { capture: true });
 }
 
 export function setupAltHoverHandler(): void {
@@ -596,12 +253,9 @@ export function setupAltHoverHandler(): void {
 
     if (e.altKey && (e.code === "BracketLeft" || e.code === "BracketRight")) {
       const tabSelector = document.getElementsByClassName(TAB_HEADER_CLASS)[1];
-      const isLyricsTabActive = tabSelector?.getAttribute("aria-selected") === "true";
-      const isFullscreen = document.querySelector("ytmusic-app-layout")?.hasAttribute("player-fullscreened");
-      if ((isLyricsTabActive || isFullscreen) && AppState.isDockOffsetEnabled) {
+      if (tabSelector?.getAttribute("aria-selected") === "true") {
         const step = e.shiftKey ? OFFSET_STEP_LARGE : OFFSET_STEP;
         adjustLyricOffset(e.code === "BracketLeft" ? -step : step);
-        wakeDockIdle();
         e.preventDefault();
       }
     }

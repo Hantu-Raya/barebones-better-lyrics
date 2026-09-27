@@ -1,16 +1,9 @@
 import {
   AD_PLAYING_ATTR,
-  DISCORD_INVITE_URL,
-  DISCORD_LOGO_SRC,
   DOCK_CLASS,
-  FONT_LINK,
+  DOCK_DEFAULT_POSITION,
   FOOTER_CLASS,
   FOOTER_NOT_VISIBLE_LOG,
-  GENIUS_LOGO_SRC,
-  HIDDEN_CLASS,
-  HOMEPAGE_DOMAIN,
-  HOMEPAGE_ICON_URL,
-  HOMEPAGE_URL,
   LINE_CLASS,
   LOADER_TRANSITION_ENDED,
   LYRICS_AD_OVERLAY_ID,
@@ -20,7 +13,6 @@ import {
   LYRICS_WRAPPER_CREATED_LOG,
   LYRICS_WRAPPER_ID,
   NO_LYRICS_TEXT_SELECTOR,
-  NOTO_SANS_UNIVERSAL_LINK,
   PLAYER_BAR_SELECTOR,
   PROVIDER_CONFIGS,
   type SyncType,
@@ -30,16 +22,8 @@ import {
 } from "@constants";
 import { AppState } from "@core/appState";
 import { t } from "@core/i18n";
-import type { ThumbnailElement } from "@modules/lyrics/requestSniffer/NextResponse";
-import { measureWidth, type ObserverHandle, observeLayoutWidth, observeResize } from "@modules/ui/layout/layoutWidth";
+import { type ObserverHandle, observeResize } from "@modules/ui/layout/layoutWidth";
 import { lyricsElementAdded, mainView } from "@modules/ui/mainLyricsView";
-import {
-  createFullscreenControls,
-  type FullscreenControlsHandle,
-  wrapSongInfoWithActions,
-} from "@modules/ui/playerControls/fullscreenControls";
-import { activateBylineLink, getBylineLinks, observeByline } from "@modules/ui/playerControls/playerBarControls";
-import type { PlaybackSnapshot } from "@modules/ui/playerControls/playhead";
 import { getResumeScrollElement } from "@modules/ui/resumeScrollButton";
 import { reflow, toMs } from "@braccato/core/util";
 import { buildControlsSegment, buildSourceSlot, closeSourceMenu } from "./lyricsDock/controls";
@@ -51,39 +35,6 @@ import { logCore } from "@core/logger";
 const providerDisplayInfo: Record<string, { name: string; syncType: SyncType }> = Object.fromEntries(
   PROVIDER_CONFIGS.map(p => [p.key, { name: p.displayName, syncType: p.syncType }])
 );
-
-interface ActionButtonOptions {
-  text: string;
-  href: string;
-  logoSrc?: string;
-  logoAlt?: string;
-}
-
-function createActionButton(options: ActionButtonOptions): HTMLElement {
-  const { text, href, logoSrc, logoAlt } = options;
-
-  const container = document.createElement("div");
-  container.className = `${FOOTER_CLASS}__container`;
-
-  if (logoSrc) {
-    const img = document.createElement("img");
-    img.src = logoSrc;
-    img.alt = logoAlt ?? "";
-    img.width = 20;
-    img.height = 20;
-    container.appendChild(img);
-  }
-
-  const link = document.createElement("a");
-  link.href = href;
-  link.target = "_blank";
-  link.rel = "noreferrer noopener";
-  link.textContent = text;
-  link.style.height = "100%";
-  container.appendChild(link);
-
-  return container;
-}
 
 let lyricsObserver: MutationObserver | null = null;
 let adStateObserver: MutationObserver | null = null;
@@ -183,15 +134,13 @@ export function addFooter(
   footer.classList.add(FOOTER_CLASS);
   lyricsElement.appendChild(footer);
   observeFooterForRecalc(footer);
-  createFooter(song, artist);
+  createFooter();
 
-  const footerLink = document.getElementById("betterLyricsFooterLink") as HTMLAnchorElement;
-  sourceHref = sourceHref || HOMEPAGE_URL;
+  const footerLink = document.getElementById("betterLyricsFooterLink") as HTMLElement;
 
   const info = providerKey ? providerDisplayInfo[providerKey] : null;
 
   footerLink.textContent = "";
-  footerLink.href = sourceHref;
 
   if (info) {
     footerLink.appendChild(document.createTextNode(info.name));
@@ -207,52 +156,15 @@ export function addFooter(
     }
     footerLink.appendChild(iconWrapper);
   } else {
-    footerLink.textContent = source || HOMEPAGE_DOMAIN;
+    footerLink.textContent = source;
   }
 
   AppState.currentProviderKey = providerKey ?? null;
   void loadSavedOffset(AppState.lastLoadedVideoId, AppState.currentProviderKey);
 
-  if (AppState.isControlsDockEnabled) {
-    mountDock(AppState.controlsDockPosition);
-  }
+  mountDock();
 
   updateNoLyricsSuppression();
-}
-
-let layoutAttrObserver: MutationObserver | null = null;
-let dockHoverActive = false;
-
-function ensureLayoutAttrObserver(): void {
-  if (layoutAttrObserver) return;
-  const layout = document.getElementById("layout");
-  if (!layout) return;
-  layoutAttrObserver = new MutationObserver(() => {
-    if (!dockHoverActive) return;
-    if (!layout.hasAttribute("player-fullscreened")) return;
-    if (!layout.hasAttribute("show-fullscreen-controls")) {
-      layout.setAttribute("show-fullscreen-controls", "");
-    }
-  });
-  layoutAttrObserver.observe(layout, { attributes: true, attributeFilter: ["show-fullscreen-controls"] });
-}
-
-function disconnectLayoutAttrObserver(): void {
-  layoutAttrObserver?.disconnect();
-  layoutAttrObserver = null;
-}
-
-function showPlayerBarOnDockHover(): void {
-  dockHoverActive = true;
-  const layout = document.getElementById("layout");
-  if (layout?.hasAttribute("player-fullscreened")) {
-    layout.setAttribute("show-fullscreen-controls", "");
-  }
-}
-
-function hidePlayerBarOnDockLeave(): void {
-  dockHoverActive = false;
-  document.getElementById("layout")?.removeAttribute("show-fullscreen-controls");
 }
 
 type DockSuppressionReason = "ad" | "loading" | "noLyrics" | "notLyricsPage";
@@ -277,10 +189,6 @@ export function observeLyricsPageType(): void {
   syncNotLyricsPageSuppression(tabRenderer);
   lyricsPageTypeObserver = new MutationObserver(() => syncNotLyricsPageSuppression(tabRenderer));
   lyricsPageTypeObserver.observe(tabRenderer, { attributes: true, attributeFilter: ["page-type"] });
-}
-
-export function setFullscreenNoLyricsState(noLyrics: boolean): void {
-  document.querySelector("#player-page")?.toggleAttribute("blyrics-no-lyrics", noLyrics);
 }
 
 function updateNoLyricsSuppression(): void {
@@ -309,13 +217,10 @@ function setDockSuppression(reason: DockSuppressionReason, suppressed: boolean):
 
 const DOCK_PROXIMITY = 104;
 const DOCK_LEAVE_GRACE = 120;
-const BOTTOM_REVEAL_ZONE = 100;
-const PLAYER_BAR_HIDE_DELAY = 800;
 let dockProximityAttached = false;
 let dockProximityListener: ((event: MouseEvent) => void) | null = null;
 let dockProximityRaf: number | null = null;
 let dockLeaveTimer: ReturnType<typeof setTimeout> | null = null;
-let playerBarHideTimer: ReturnType<typeof setTimeout> | null = null;
 const DOCK_EXPANDED_CLASS = `${DOCK_CLASS}__inner--expanded`;
 
 function setDockNear(inner: HTMLElement, near: boolean): void {
@@ -333,48 +238,17 @@ function setDockNear(inner: HTMLElement, near: boolean): void {
   }
 }
 
-function setPlayerBarShown(shown: boolean): void {
-  if (shown) {
-    if (playerBarHideTimer) {
-      clearTimeout(playerBarHideTimer);
-      playerBarHideTimer = null;
-    }
-    showPlayerBarOnDockHover();
-  } else if (dockHoverActive && !playerBarHideTimer) {
-    playerBarHideTimer = setTimeout(() => {
-      playerBarHideTimer = null;
-      hidePlayerBarOnDockLeave();
-    }, PLAYER_BAR_HIDE_DELAY);
-  }
-}
-
-function isCursorNearBottom(event: MouseEvent): boolean {
-  const layout = document.getElementById("layout");
-  if (!layout?.hasAttribute("player-fullscreened")) return false;
-  let threshold = window.innerHeight - BOTTOM_REVEAL_ZONE;
-  if (layout.hasAttribute("show-fullscreen-controls")) {
-    const bar = document.querySelector(PLAYER_BAR_SELECTOR)?.getBoundingClientRect();
-    if (bar && bar.height > 0) threshold = Math.min(threshold, bar.top);
-  }
-  return event.clientY >= threshold;
-}
-
 function evaluateDockProximity(event: MouseEvent): void {
   const inner = document.getElementsByClassName(`${DOCK_CLASS}__inner`)[0] as HTMLElement | undefined;
   if (!inner) return;
 
-  const barNear = isCursorNearBottom(event);
   const rect = inner.getBoundingClientRect();
   const dock = inner.parentElement as HTMLElement | null;
   const dockActive =
     rect.width > 0 &&
-    !dock?.classList.contains(`${DOCK_CLASS}--hidden`) &&
-    !dock?.classList.contains(`${DOCK_CLASS}--idle-hidden`);
+    !dock?.classList.contains(`${DOCK_CLASS}--hidden`);
 
-  if (!dockActive) {
-    setPlayerBarShown(barNear);
-    return;
-  }
+  if (!dockActive) return;
 
   const position = dock?.dataset.position ?? "";
   let { left, right, top, bottom } = rect;
@@ -411,7 +285,6 @@ function evaluateDockProximity(event: MouseEvent): void {
   }
 
   setDockNear(inner, dockNear);
-  setPlayerBarShown(dockNear || barNear);
 }
 
 // Pre-expands the dock when the cursor comes near, so the controls have settled into
@@ -446,10 +319,6 @@ function removeDockProximityListener(): void {
   if (dockLeaveTimer) {
     clearTimeout(dockLeaveTimer);
     dockLeaveTimer = null;
-  }
-  if (playerBarHideTimer) {
-    clearTimeout(playerBarHideTimer);
-    playerBarHideTimer = null;
   }
 }
 
@@ -513,7 +382,7 @@ function animateControlsSwap(oldControls: HTMLElement, newControls: HTMLElement)
 // Mounts the dock if absent, otherwise refreshes its controls in place. The dock
 // element persists across re-injections so the cursor's hover state (and the expanded
 // reveal) is never lost during a provider switch or toggle.
-export function mountDock(position: string): void {
+export function mountDock(position: string = DOCK_DEFAULT_POSITION): void {
   let dock = document.getElementsByClassName(DOCK_CLASS)[0] as HTMLElement | undefined;
   let inner: HTMLElement | null;
 
@@ -537,7 +406,6 @@ export function mountDock(position: string): void {
       (event.target as HTMLElement).closest("button")?.blur();
     });
 
-    ensureLayoutAttrObserver();
     ensureDockProximityListener();
 
     dock.appendChild(inner);
@@ -567,13 +435,12 @@ export function mountDock(position: string): void {
 }
 
 export function refreshDockSources(): void {
-  if (!AppState.isControlsDockEnabled) return;
   if (!document.getElementsByClassName(DOCK_CLASS)[0]) return;
 
   const oldSlot = document.querySelector(`.${DOCK_CLASS}__source`) as HTMLElement | null;
   const newSlot = buildSourceSlot();
   if (!oldSlot || !newSlot) {
-    mountDock(AppState.controlsDockPosition);
+    mountDock();
     return;
   }
 
@@ -594,76 +461,29 @@ export function refreshDockSources(): void {
 
 export function unmountDock(): void {
   dockControlsSwapFinalize?.();
-  hidePlayerBarOnDockLeave();
-  disconnectLayoutAttrObserver();
   removeDockProximityListener();
   const dock = document.getElementsByClassName(DOCK_CLASS)[0];
   if (dock) dock.remove();
   document.querySelector("#side-panel")?.classList.remove(DOCK_HOST_CLASS);
 }
 
-export function updateDockPosition(position: string): void {
-  const dock = document.getElementsByClassName(DOCK_CLASS)[0] as HTMLElement | undefined;
-  if (dock) dock.dataset.position = position;
-}
-
 /**
- * Creates the footer elements including source link, Discord link, and add lyrics button.
- *
- * @param song - Song title
- * @param artist - Artist name
- * @param album - Album name
- * @param duration - Song duration in seconds
+ * Creates the footer: a plain-text attribution naming the lyric source. No links or remote logos.
  */
-function createFooter(song: string, artist: string): void {
+function createFooter(): void {
   try {
     const footer = document.getElementsByClassName(FOOTER_CLASS)[0] as HTMLElement;
     footer.replaceChildren();
 
     const footerContainer = document.createElement("div");
     footerContainer.className = `${FOOTER_CLASS}__container`;
-
-    const footerImage = document.createElement("img");
-    footerImage.src = HOMEPAGE_ICON_URL;
-    footerImage.alt = "Better Lyrics Logo";
-    footerImage.width = 20;
-    footerImage.height = 20;
-
-    footerContainer.appendChild(footerImage);
     footerContainer.appendChild(document.createTextNode(t("lyrics_source")));
 
-    const footerLink = document.createElement("a");
-    footerLink.target = "_blank";
-    footerLink.id = "betterLyricsFooterLink";
-
-    footerContainer.appendChild(footerLink);
-
-    const discordImage = document.createElement("img");
-    discordImage.src = DISCORD_LOGO_SRC;
-    discordImage.alt = "Better Lyrics Discord";
-    discordImage.width = 20;
-    discordImage.height = 20;
-
-    const discordLink = document.createElement("a");
-    discordLink.className = `${FOOTER_CLASS}__discord`;
-    discordLink.href = DISCORD_INVITE_URL;
-    discordLink.target = "_blank";
-
-    discordLink.appendChild(discordImage);
-
-    footerLink.target = "_blank";
-
-    const geniusContainer = createActionButton({
-      text: t("lyrics_searchOnGenius"),
-      href: getGeniusLink(song, artist),
-      logoSrc: GENIUS_LOGO_SRC,
-      logoAlt: "Genius",
-    });
+    const footerSource = document.createElement("span");
+    footerSource.id = "betterLyricsFooterLink";
+    footerContainer.appendChild(footerSource);
 
     footer.appendChild(footerContainer);
-    footer.appendChild(geniusContainer);
-    footer.appendChild(discordLink);
-
     footer.removeAttribute("is-empty");
   } catch (_err) {
     logCore(FOOTER_NOT_VISIBLE_LOG);
@@ -884,181 +704,17 @@ function clearLyrics(): void {
   }
 }
 
-let albumArtLoadController: AbortController | null = null;
-
-export function reloadAlbumArt() {
-  if (lastLoadedThumbnail) {
-    addThumbnail(lastLoadedThumbnail);
-  }
-}
-
-let lastLoadedThumbnail: ThumbnailElement | null = null;
-let thumbnailWidth: ObserverHandle | null = null;
-
-export function resetThumbnailState(): void {
-  lastLoadedThumbnail = null;
-}
-
-function setBackgroundImage(src: string): void {
-  const layout = document.getElementById("layout");
-  if (AppState.shouldInjectAlbumArt) {
-    layout?.style.setProperty("--blyrics-background-img", `url('${src}')`);
-  } else {
-    layout?.style.removeProperty("--blyrics-background-img");
-  }
-}
-
-function containerSizeFor(width: number): number {
-  return Math.round(Math.max(width, 544));
-}
-
-function getContainerSize(): number {
-  return containerSizeFor(measureWidth(document.getElementById("thumbnail")) ?? 0);
-}
-
-function getHighResImageUrl(smallThumbnail: ThumbnailElement) {
-  const containerSize = getContainerSize();
-  let url = smallThumbnail.url;
-  if (url && /w\d+-h\d+/.test(url)) {
-    url = url.replace(/w\d+-h\d+/, `w${containerSize}-h${containerSize}`);
-  } else {
-    url = url.replace(/\/(sd|hq|mq)?default\.jpg/, "/maxresdefault.jpg");
-  }
-  return url;
-}
-
-export function addThumbnail(smallThumbnail: ThumbnailElement): void {
-  thumbnailWidth?.destroy();
-
-  let imgElm = document.getElementById("blyrics-img") as HTMLImageElement | undefined;
-  if (!imgElm) {
-    imgElm = document.createElement("img");
-    imgElm.id = "blyrics-img";
-    imgElm.draggable = false;
-    imgElm.classList.add("style-scope", "yt-img-shadow");
-    imgElm.style.position = "absolute";
-    imgElm.style.inset = "0";
-    document.getElementById("thumbnail")?.appendChild(imgElm);
-  }
-
-  const containerSize = getContainerSize();
-  const url = getHighResImageUrl(smallThumbnail);
-
-  albumArtLoadController?.abort();
-  const loadController = new AbortController();
-  albumArtLoadController = loadController;
-
-  const proxy = new Image();
-  proxy.src = url;
-
-  const setHighResImage = () => {
-    if (loadController.signal.aborted) return;
-
-    imgElm.src = proxy.src;
-    setBackgroundImage(proxy.src);
-
-    if (getContainerSize() !== containerSize) {
-      reloadAlbumArt();
-      return;
-    }
-
-    thumbnailWidth = observeLayoutWidth(
-      () => document.getElementById("thumbnail"),
-      width => {
-        if (width === null || containerSizeFor(width) === containerSize) return;
-        thumbnailWidth?.destroy();
-        thumbnailWidth = null;
-        reloadAlbumArt();
-      }
-    );
-  };
-
-  if (proxy.complete) {
-    lastLoadedThumbnail = smallThumbnail;
-    setHighResImage();
-  } else {
-    if (lastLoadedThumbnail !== smallThumbnail) {
-      imgElm.src = smallThumbnail.url;
-      imgElm.classList.remove(HIDDEN_CLASS);
-      setBackgroundImage(smallThumbnail.url);
-    }
-
-    lastLoadedThumbnail = smallThumbnail;
-
-    proxy.onload = setHighResImage;
-  }
-}
-
-export function preloadHighResThumbnail(smallThumbnail: ThumbnailElement) {
-  const proxy = new Image();
-  proxy.src = getHighResImageUrl(smallThumbnail);
-}
-
-export function showYtThumbnail(): void {
-  const blyricsImg = document.getElementById("blyrics-img") as HTMLImageElement | null;
-  if (blyricsImg) {
-    blyricsImg.src = "";
-    blyricsImg.classList.add(HIDDEN_CLASS);
-  }
-
-  const ytImg = document.querySelector("#thumbnail>#img") as HTMLImageElement | null;
-  if (ytImg?.src && AppState.shouldInjectAlbumArt) {
-    setBackgroundImage(ytImg.src);
-  }
-}
-
 /**
- * Adds a button for users to contribute lyrics.
- *
- * @param song - Song title
- * @param artist - Artist name
- * @param album - Album name
- * @param duration - Song duration in seconds
+ * Clears the dock when there are no lyrics to control.
  */
-export function addNoLyricsButton(song: string, artist: string): void {
-  const lyricsWrapper = document.getElementById(LYRICS_WRAPPER_ID);
-  if (!lyricsWrapper) return;
-
-  // No lyrics to control: the dock has nothing to offer here.
+export function showNoLyricsState(): void {
   unmountDock();
-
-  const buttonContainer = document.createElement("div");
-  buttonContainer.className = "blyrics-no-lyrics-button-container";
-
-  const geniusSearch = createActionButton({
-    text: t("lyrics_searchOnGenius"),
-    href: getGeniusLink(song, artist),
-    logoSrc: GENIUS_LOGO_SRC,
-    logoAlt: "Genius",
-  });
-
-  buttonContainer.appendChild(geniusSearch);
-
-  lyricsWrapper.appendChild(buttonContainer);
 }
 
 /**
- * Injects required head tags including font links and image preloads.
+ * Injects the extension stylesheets (local files only).
  */
 export async function injectHeadTags(): Promise<void> {
-  const imgURL = HOMEPAGE_ICON_URL;
-
-  if (!document.head.querySelector(`link[rel="preload"][href="${imgURL}"]`)) {
-    const imagePreload = document.createElement("link");
-    imagePreload.rel = "preload";
-    imagePreload.as = "image";
-    imagePreload.href = imgURL;
-    document.head.appendChild(imagePreload);
-  }
-
-  for (const href of [FONT_LINK, NOTO_SANS_UNIVERSAL_LINK]) {
-    if (document.head.querySelector(`link[rel="stylesheet"][href="${href}"]`)) continue;
-    const fontLink = document.createElement("link");
-    fontLink.href = href;
-    fontLink.rel = "stylesheet";
-    document.head.appendChild(fontLink);
-  }
-
   const cssFiles = ["css/ytmusic/index.css", "css/blyrics/index.css"];
 
   for (const file of cssFiles) {
@@ -1081,7 +737,6 @@ export function cleanup(): void {
   // built standing in the floating document. It drops the song off the publish this function ends
   // with instead.
   mainView.clear();
-  setFullscreenNoLyricsState(false);
 
   if (lyricsObserver) {
     lyricsObserver.disconnect();
@@ -1105,142 +760,10 @@ export function cleanup(): void {
 
   // The dock persists across re-injections (updated in place by addFooter) so a
   // provider switch or toggle never tears it out of the DOM. It is removed only when
-  // there are no lyrics (addNoLyricsButton) or the dock setting is disabled.
+  // there are no lyrics (showNoLyricsState).
   getResumeScrollElement().setAttribute("autoscroll-hidden", "true");
 
-  const buttonContainer = document.querySelector(".blyrics-no-lyrics-button-container");
-  if (buttonContainer) {
-    buttonContainer.remove();
-  }
-
   clearLyrics();
-}
-
-/**
- * Injects song title and artist information used in fullscreen mode.
- *
- * @param title - Song title
- * @param artist - Artist name
- */
-let fullscreenControls: FullscreenControlsHandle | null = null;
-let fullscreenColumnWidth: ObserverHandle | null = null;
-
-function setFullscreenControls(handle: FullscreenControlsHandle | null): void {
-  if (fullscreenControls && fullscreenControls !== handle) fullscreenControls.destroy();
-  fullscreenControls = handle;
-}
-
-export function updateFullscreenControlsSnapshot(snapshot: PlaybackSnapshot | null): void {
-  fullscreenControls?.setSnapshot(snapshot);
-}
-
-function trackFullscreenColumnWidth(column: HTMLElement): void {
-  fullscreenColumnWidth?.destroy();
-  fullscreenColumnWidth = observeLayoutWidth(
-    () => document.querySelector<HTMLElement>("#player.ytmusic-player-page"),
-    width => {
-      if (width === null) {
-        column.style.removeProperty("width");
-        return;
-      }
-      column.style.width = `${width}px`;
-    }
-  );
-}
-
-function songInfoLabel(text: string, href: string | null): Node {
-  if (!href) return document.createTextNode(text);
-  const link = document.createElement("a");
-  link.className = "blyrics-song-link";
-  link.href = href;
-  link.textContent = text;
-  link.addEventListener("click", event => {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    if (activateBylineLink(document, href)) event.preventDefault();
-  });
-  return link;
-}
-
-let lastSongInfo: { song: string; artist: string; album?: string } | null = null;
-let bylineObserverDisconnect: (() => void) | null = null;
-
-function populateArtistElement(artistElm: HTMLElement, artist: string, album?: string): void {
-  const { artistRuns, albumHref } = getBylineLinks(document);
-  artistElm.replaceChildren();
-  if (artistRuns.length > 0) {
-    for (const run of artistRuns) artistElm.appendChild(songInfoLabel(run.text, run.href));
-  } else {
-    artistElm.textContent = artist;
-  }
-  if (album) {
-    const albumElm = document.createElement("span");
-    albumElm.id = "blyrics-album";
-    albumElm.append(" · ", songInfoLabel(album, albumHref));
-    artistElm.appendChild(albumElm);
-  }
-}
-
-function refreshSongInfoLinks(): void {
-  const artistElm = document.getElementById("blyrics-artist");
-  if (!artistElm || !lastSongInfo) return;
-  if (document.getElementById("blyrics-title")?.textContent !== lastSongInfo.song) return;
-  populateArtistElement(artistElm, lastSongInfo.artist, lastSongInfo.album);
-}
-
-export function injectSongAttributes(title: string, artist: string, album?: string): void {
-  const mainPanel = document.getElementById("main-panel")!;
-  console.assert(mainPanel != null);
-  const existingColumn = document.getElementById("blyrics-fs-column");
-  const existingSongInfo = document.getElementById("blyrics-song-info");
-  const existingWatermark = document.getElementById("blyrics-watermark");
-
-  existingColumn?.remove();
-  existingSongInfo?.remove();
-  existingWatermark?.remove();
-  fullscreenColumnWidth?.destroy();
-  setFullscreenControls(null);
-
-  const titleElm = document.createElement("p");
-  titleElm.id = "blyrics-title";
-  titleElm.textContent = title;
-
-  const artistElm = document.createElement("p");
-  artistElm.id = "blyrics-artist";
-  populateArtistElement(artistElm, artist, album);
-
-  lastSongInfo = { song: title, artist, album };
-  bylineObserverDisconnect?.();
-  bylineObserverDisconnect = observeByline(document, refreshSongInfoLinks);
-
-  const songInfoWrapper = document.createElement("div");
-  songInfoWrapper.id = "blyrics-song-info";
-  songInfoWrapper.appendChild(titleElm);
-  songInfoWrapper.appendChild(artistElm);
-
-  const row = wrapSongInfoWithActions(document, songInfoWrapper);
-  row.id = "blyrics-fs-info-row";
-  row.dir = "auto";
-
-  const controls = createFullscreenControls(document);
-  controls.element.id = "blyrics-fs-controls";
-
-  const column = document.createElement("div");
-  column.id = "blyrics-fs-column";
-  column.append(row, controls.element);
-  mainPanel.appendChild(column);
-  trackFullscreenColumnWidth(column);
-  setFullscreenControls(controls);
-}
-
-/**
- * Generates link to search on Genius
- *
- * @param song - Song name
- * @param artist - Artist name
- */
-function getGeniusLink(song: string, artist: string): string {
-  const query = encodeURIComponent(`!ducky site:genius.com ${artist.trim()} ${song.trim()}`);
-  return `https://duckduckgo.com/?q=${query}`;
 }
 
 let footerResize: ObserverHandle | null = null;

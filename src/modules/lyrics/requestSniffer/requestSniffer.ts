@@ -268,12 +268,11 @@ export function setupRequestSniffer(): () => void {
 
   const handleSniffResponse = (event: Event): void => {
     if (!(event instanceof CustomEvent)) return;
-    let { /** @type string */ url, requestJson, responseJson, localizedResponseJson } = event.detail;
+    let { /** @type string */ url, requestJson, responseJson } = event.detail;
     if (matchesPath(url, "/youtubei/v1/next")) {
       let nextResponse = responseJson as NextResponse;
-      const localizedMetadata = collectLocalizedDisplayMetadata(
-        (localizedResponseJson ?? responseJson) as NextResponse
-      );
+      // Only the page's own (possibly localized) response is observed; no English replay.
+      const localizedMetadata = collectLocalizedDisplayMetadata(nextResponse);
       let playlistPanelRendererContents = getPlaylistPanelContents(nextResponse);
 
       if (!playlistPanelRendererContents) {

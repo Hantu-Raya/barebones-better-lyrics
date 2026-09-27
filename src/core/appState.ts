@@ -1,4 +1,3 @@
-import { DOCK_CONTROL_ORDER_DEFAULT, DOCK_DEFAULT_POSITION } from "@constants";
 import type { LyricDecorations, LyricsData } from "@modules/lyrics/injectLyrics";
 import { createLyrics, type ParsedLyrics } from "@modules/lyrics/lyrics";
 import type { LyricSourceKey } from "@modules/lyrics/providers/shared";
@@ -35,8 +34,6 @@ interface AppStateType {
   lastVideoDetails: any | null;
   lyricInjectionPromise: Promise<any> | null;
   queueLyricInjection: boolean;
-  shouldInjectAlbumArt: "Unknown" | boolean;
-  queueSongDetailsInjection: boolean;
   loaderAnimationEndTimeout: number | undefined;
   lastLoadedVideoId: string | null;
   lyricAbortController: AbortController | null;
@@ -44,7 +41,6 @@ interface AppStateType {
   translationDisabledLanguages: string[];
   translationLanguage: string;
   isPassiveScrollEnabled: boolean;
-  hasPreloadedNextSong: boolean;
   currentInjectionId: number;
   lyricOffset: number;
   globalLyricOffset: number;
@@ -53,15 +49,6 @@ interface AppStateType {
   currentProviderKey: string | null;
   manualProviderKey: LyricSourceKey | null;
   availableProviderKeys: LyricSourceKey[];
-  isControlsDockEnabled: boolean;
-  controlsDockPosition: string;
-  isControlsDockAutoHideInFullscreenEnabled: boolean;
-  isDockSourceEnabled: boolean;
-  isDockTranslateEnabled: boolean;
-  isDockOffsetEnabled: boolean;
-  isDockRefreshEnabled: boolean;
-  dockControlsOrder: string[];
-  endTimeMode: "total" | "remaining";
 }
 
 export const AppState: AppStateType = {
@@ -76,8 +63,6 @@ export const AppState: AppStateType = {
   lastVideoDetails: null,
   lyricInjectionPromise: null,
   queueLyricInjection: false,
-  shouldInjectAlbumArt: "Unknown",
-  queueSongDetailsInjection: false,
   loaderAnimationEndTimeout: undefined,
   lastLoadedVideoId: null,
   lyricAbortController: null,
@@ -85,7 +70,6 @@ export const AppState: AppStateType = {
   translationDisabledLanguages: [],
   translationLanguage: "en",
   isPassiveScrollEnabled: true,
-  hasPreloadedNextSong: false,
   currentInjectionId: 0,
   lyricOffset: 0,
   globalLyricOffset: 0,
@@ -94,15 +78,6 @@ export const AppState: AppStateType = {
   currentProviderKey: null,
   manualProviderKey: null,
   availableProviderKeys: [],
-  isControlsDockEnabled: true,
-  controlsDockPosition: DOCK_DEFAULT_POSITION,
-  isControlsDockAutoHideInFullscreenEnabled: true,
-  isDockSourceEnabled: true,
-  isDockTranslateEnabled: true,
-  isDockOffsetEnabled: true,
-  isDockRefreshEnabled: false,
-  dockControlsOrder: [...DOCK_CONTROL_ORDER_DEFAULT],
-  endTimeMode: "total",
 };
 
 export function reloadLyrics(): void {

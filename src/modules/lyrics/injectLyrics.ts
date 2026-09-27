@@ -11,15 +11,7 @@ import { AppState } from "@core/appState";
 import { t } from "@core/i18n";
 import { applySegmentMapToLyrics, type LyricSourceResultWithMeta } from "@modules/lyrics/lyrics";
 import { getTranslationFromCache, translateBatch } from "@modules/lyrics/translation";
-import {
-  addFooter,
-  addNoLyricsButton,
-  cleanup,
-  createLyricsWrapper,
-  flushLoader,
-  renderLoader,
-  setFullscreenNoLyricsState,
-} from "@modules/ui/dom";
+import { addFooter, cleanup, createLyricsWrapper, flushLoader, renderLoader, showNoLyricsState } from "@modules/ui/dom";
 import { lyricsElementAdded, mainView } from "@modules/ui/mainLyricsView";
 import { disableNativeLyricsFocus } from "@modules/ui/nativeLyricsFocus";
 import { injectTranslation, type LineData } from "@braccato/core";
@@ -146,7 +138,6 @@ function injectLyrics(
 
   const allZero = lyrics.every(item => item.startTimeMs === 0);
   const noLyrics = lyrics[0].words === t("lyrics_notFound");
-  setFullscreenNoLyricsState(noLyrics);
 
   if (keepLoaderVisible) {
     renderLoader(true);
@@ -189,7 +180,7 @@ function injectLyrics(
       data.videoId
     );
   } else {
-    addNoLyricsButton(data.song, data.artist);
+    showNoLyricsState();
   }
 
   void processBatchTranslations(doc, data, lines, isStale, signal);

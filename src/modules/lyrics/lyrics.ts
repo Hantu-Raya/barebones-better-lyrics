@@ -3,7 +3,7 @@
  * Manages lyrics fetching, caching, processing, and rendering.
  */
 
-import { FETCH_LYRICS_LOG, LYRICS_TAB_HIDDEN_LOG, SEEK_EVENT, SERVER_ERROR_LOG, TAB_HEADER_CLASS } from "@constants";
+import { LYRICS_TAB_HIDDEN_LOG, SEEK_EVENT, SERVER_ERROR_LOG, TAB_HEADER_CLASS } from "@constants";
 import { AppState, type PlayerDetails } from "@core/appState";
 import { t } from "@core/i18n";
 import { type LineData, type LyricsData, processLyrics } from "@modules/lyrics/injectLyrics";
@@ -133,7 +133,6 @@ function recordAvailableProviders(sourceMap: SourceMapType): boolean {
 }
 
 async function completeSourceProbe(providerParameters: ProviderParameters, signal: AbortSignal): Promise<void> {
-  if (!AppState.isControlsDockEnabled || !AppState.isDockSourceEnabled) return;
   try {
     for (const provider of providerPriority) {
       if (signal.aborted) return;
@@ -248,9 +247,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
     if (signal.aborted) {
       return;
     }
-
-    logCore(FETCH_LYRICS_LOG, song, artist);
-
     let lyrics: LyricSourceResult | null = null;
     let sourceMap = newSourceMap();
 
@@ -264,28 +260,9 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       sourceMap,
       signal,
     };
-    let ytLyricsEarlyInjectAbortController = new AbortController();
-
-    let ytLyricsPromise = getLyrics(providerParameters, "yt-lyrics").then(lyrics => {
-      if (!AppState.areLyricsLoaded && lyrics && !signal.aborted) {
-        if (!ytLyricsEarlyInjectAbortController.signal.aborted) {
-          logCore("Temporarily Using YT Music Lyrics while we wait for synced lyrics to load");
-          let lyricsWithMeta = {
-            ...lyrics,
-            song: providerParameters.song,
-            artist: providerParameters.artist,
-            duration: providerParameters.duration,
-            videoId: providerParameters.videoId,
-            album: providerParameters.album || "",
-            segmentMap: null,
-          };
-
-          processLyrics(document, lyricsWithMeta, true, signal);
-          retainParsedLyrics(lyricsWithMeta);
-        }
-      }
-      return lyrics;
-    });
+    // YouTube Music's own lyrics (from the passively observed page response) are only used as a
+    // match check for other sources and as the last timed source; plain text is never shown.
+    const ytLyricsPromise = getLyrics(providerParameters, "yt-lyrics");
 
     let selectedProvider: string | undefined;
 
@@ -307,7 +284,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
           if (!isTimed(sourceLyrics.lyrics)) {
             continue;
           }
-          ytLyricsEarlyInjectAbortController.abort("Lyrics are ready"); // May not be ideal when the stringSimilarity fails, but this should be rare anyways
           let ytLyrics = (await ytLyricsPromise) as YTLyricSourceResult;
 
           if (ytLyrics !== null) {
@@ -318,9 +294,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
 
             let matchAmount = stringSimilarity(lyricText.toLowerCase(), ytLyrics.text.toLowerCase());
             if (matchAmount < 0.5) {
-              logCore(
-                `Got lyrics from ${sourceLyrics.source}, but they don't match YT lyrics. Rejecting: Match: ${matchAmount}%`
-              );
               continue;
             }
           }
@@ -357,8 +330,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       segmentMap = null; // The timing matches, we don't need to apply a segment map!
     }
 
-    logCore("Got Lyrics from " + lyrics.source);
-
     // Preserve song and artist information in the lyrics data for the "Add Lyrics" button
 
     let lyricsWithMeta: LyricSourceResultWithMeta = {
@@ -385,72 +356,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
   } finally {
     if (shouldCleanupLoader) {
       flushLoader();
-    }
-  }
-}
-
-/**
- * Warms caches so lyric fetching is faster
- *
- * @param detail - Song and player details
- * @param isMusicVideo
- */
-export async function preFetchLyrics(
-  detail: Pick<PlayerDetails, "song" | "artist" | "videoId" | "duration">,
-  isMusicVideo: boolean
-): Promise<void> {
-  logCore("Prefetching next song", detail, isMusicVideo);
-  let song = detail.song;
-  let artist = detail.artist;
-  let videoId = detail.videoId;
-  let duration = Number(detail.duration);
-  let signal = new AbortController().signal; // create a signal to pass to other funcs, not used
-
-  let matchingSong = await getSongMetadata(videoId, 250, signal);
-
-  if (matchingSong) {
-    song = matchingSong.title;
-    artist = matchingSong.artist || artist;
-
-    if (isMusicVideo && matchingSong.counterpartVideoId && matchingSong.segmentMap) {
-      videoId = matchingSong.counterpartVideoId;
-    }
-  }
-
-  song = song.trim();
-  artist = normalizeArtist(artist);
-  let album = await getSongAlbum(videoId, signal);
-  if (!album) {
-    album = "";
-  }
-
-  logCore("Prefetching for: ", song, artist);
-
-  let sourceMap = newSourceMap();
-  let providerParameters: ProviderParameters = {
-    song,
-    artist,
-    duration,
-    videoId,
-    audioTrackData: null,
-    album,
-    sourceMap,
-    signal,
-  };
-
-  for (let provider of providerPriority) {
-    if (signal.aborted) {
-      return;
-    }
-
-    try {
-      let sourceLyrics = await getLyrics(providerParameters, provider);
-
-      if (sourceLyrics && sourceLyrics.lyrics && sourceLyrics.lyrics.length > 0) {
-        break;
-      }
-    } catch (err) {
-      logCore(err);
     }
   }
 }

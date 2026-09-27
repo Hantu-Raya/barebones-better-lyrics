@@ -75,7 +75,7 @@ export default async function lrclib(p: ProviderParameters): Promise<void> {
   const lyrics = parseLRC(synced, p.duration * 1000);
   p.sourceMap[KEY].lyricSourceResult =
     lyrics.length > 0
-      ? { lyrics, source: "LRCLib", sourceHref: "https://lrclib.net", musicVideoSynced: false, cacheAllowed: true }
+      ? { lyrics, source: "LRCLIB", sourceHref: "https://lrclib.net", musicVideoSynced: false, cacheAllowed: true }
       : null;
   p.sourceMap[KEY].filled = true;
 }

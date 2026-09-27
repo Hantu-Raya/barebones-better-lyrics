@@ -1,361 +1,74 @@
-import {
-  DOCK_CLASS,
-  DOCK_CONTROL_ORDER_DEFAULT,
-  DOCK_DEFAULT_POSITION,
-  FULLSCREEN_CONTROLS_DISABLED_ATTR,
-  LYRICS_DISABLED_ATTR,
-} from "@constants";
 import { AppState, reloadLyrics } from "@core/appState";
-import { clearCache, getStorage } from "@core/storage";
-import { configureLogging, logContent } from "@core/logger";
+import { getStorage } from "@core/storage";
 import { clearCache as clearTranslationCache } from "@modules/lyrics/translation";
-import { mountDock, reloadAlbumArt, unmountDock, updateDockPosition } from "@modules/ui/dom";
 import { applyGlobalOffsets } from "@modules/ui/lyricsDock/offset";
-import { isPlayerFullscreened, onFullscreenChange } from "@modules/ui/observer";
 
-let hasInitializedMessageListener = false;
+// Offsets are seconds; anything outside this range (or non-finite) in storage is treated as 0.
+export const MAX_GLOBAL_OFFSET_SECONDS = 30;
 
-type EnableDisableCallback = () => void;
+function sanitizeOffset(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= MAX_GLOBAL_OFFSET_SECONDS
+    ? value
+    : 0;
+}
+
+const TRANSLATION_KEYS = ["isTranslateEnabled", "translationLanguage", "translationDisabledLanguages"];
+const OFFSET_KEYS = ["globalLyricOffset", "richsyncOffsetTrim", "lineOffsetTrim"];
+
+let hasInitializedSettingsListener = false;
+
+function translationStateKey(): string {
+  return JSON.stringify([
+    AppState.isTranslateEnabled,
+    AppState.translationLanguage,
+    AppState.translationDisabledLanguages,
+  ]);
+}
 
 /**
- * Handles settings initialization and applies user preferences.
- * Sets up fullscreen behavior, animations, and other settings.
+ * Applies settings written by the options page. The options page only writes chrome.storage;
+ * this listener is the whole propagation path (no tabs messaging).
  */
-export function applyLoggingSetting(): void {
-  getStorage({ isLogsEnabled: true }, items => {
-    configureLogging(items.isLogsEnabled !== false);
-  });
-}
+export function listenForSettingsChanges(): void {
+  if (hasInitializedSettingsListener) return;
+  hasInitializedSettingsListener = true;
 
-export function handleSettings(): void {
-  onFullScreenDisabled(
-    () => {
-      const layout = document.getElementById("layout");
-      const playerPage = document.getElementById("player-page");
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "sync") return;
+    const changed = Object.keys(changes);
 
-      if (layout && playerPage) {
-        layout.setAttribute(LYRICS_DISABLED_ATTR, "");
-        playerPage.setAttribute(LYRICS_DISABLED_ATTR, "");
-      }
-    },
-    () => {
-      const layout = document.getElementById("layout");
-      const playerPage = document.getElementById("player-page");
-
-      if (layout && playerPage) {
-        layout.removeAttribute(LYRICS_DISABLED_ATTR);
-        playerPage.removeAttribute(LYRICS_DISABLED_ATTR);
-      }
-    }
-  );
-
-  onFullscreenControlsEnabled(
-    () => document.documentElement.removeAttribute(FULLSCREEN_CONTROLS_DISABLED_ATTR),
-    () => document.documentElement.setAttribute(FULLSCREEN_CONTROLS_DISABLED_ATTR, "")
-  );
-}
-
-export function onAutoSwitchEnabled(enableAutoSwitch: EnableDisableCallback): void {
-  getStorage({ isAutoSwitchEnabled: false }, items => {
-    if (items.isAutoSwitchEnabled) {
-      enableAutoSwitch();
-    }
-  });
-}
-
-export function onFullScreenDisabled(
-  disableFullScreen: EnableDisableCallback,
-  enableFullScreen: EnableDisableCallback
-): void {
-  getStorage({ isFullScreenDisabled: false }, items => {
-    if (items.isFullScreenDisabled) {
-      disableFullScreen();
-    } else {
-      enableFullScreen();
-    }
-  });
-}
-
-export function onAlbumArtEnabled(enableAlbumArt: EnableDisableCallback, disableAlbumArt: EnableDisableCallback): void {
-  getStorage({ isAlbumArtEnabled: true }, items => {
-    if (items.isAlbumArtEnabled) {
-      enableAlbumArt();
-    } else {
-      disableAlbumArt();
-    }
-  });
-}
-
-function onFullscreenControlsEnabled(
-  enableControls: EnableDisableCallback,
-  disableControls: EnableDisableCallback
-): void {
-  getStorage({ isFullscreenControlsEnabled: true }, items => {
-    if (items.isFullscreenControlsEnabled) {
-      enableControls();
-    } else {
-      disableControls();
-    }
-  });
-}
-
-function onAutoHideCursor(
-  enableCursorAutoHide: EnableDisableCallback,
-  disableCursorAutoHide: EnableDisableCallback
-): void {
-  getStorage({ isCursorAutoHideEnabled: true }, items => {
-    if (items.isCursorAutoHideEnabled) {
-      enableCursorAutoHide();
-    } else {
-      disableCursorAutoHide();
-    }
-  });
-}
-
-let mouseTimer: number | null = null;
-let cursorEventListener: ((this: Document, ev: MouseEvent) => any) | null = null;
-let cursorAutoHideSettingEnabled = false;
-let fullscreenCursorHandlersRegistered = false;
-let cursorVisible = true;
-
-function detachCursorListener(): void {
-  if (mouseTimer) {
-    window.clearTimeout(mouseTimer);
-    mouseTimer = null;
-  }
-  if (cursorEventListener) {
-    document.removeEventListener("mousemove", cursorEventListener);
-    cursorEventListener = null;
-  }
-  document.getElementById("layout")?.removeAttribute("cursor-hidden");
-  cursorVisible = true;
-}
-
-function attachCursorListener(): void {
-  if (cursorEventListener) return;
-
-  cursorVisible = true;
-  document.getElementById("layout")?.removeAttribute("cursor-hidden");
-
-  function disappearCursor(): void {
-    mouseTimer = null;
-    if (cursorVisible) {
-      document.getElementById("layout")?.setAttribute("cursor-hidden", "");
-    }
-    cursorVisible = false;
-  }
-
-  function handleMouseMove(): void {
-    if (mouseTimer) {
-      window.clearTimeout(mouseTimer);
-    }
-    if (!cursorVisible) {
-      document.getElementById("layout")?.removeAttribute("cursor-hidden");
-      cursorVisible = true;
-    }
-    mouseTimer = window.setTimeout(disappearCursor, 3000);
-  }
-
-  cursorEventListener = handleMouseMove;
-  document.addEventListener("mousemove", handleMouseMove);
-  mouseTimer = window.setTimeout(disappearCursor, 3000);
-}
-
-function syncCursorListener(): void {
-  if (cursorAutoHideSettingEnabled && isPlayerFullscreened()) {
-    attachCursorListener();
-  } else {
-    detachCursorListener();
-  }
-}
-
-export function hideCursorOnIdle(): void {
-  if (!fullscreenCursorHandlersRegistered) {
-    fullscreenCursorHandlersRegistered = true;
-    onFullscreenChange(syncCursorListener, syncCursorListener);
-  }
-
-  onAutoHideCursor(
-    () => {
-      cursorAutoHideSettingEnabled = true;
-      syncCursorListener();
-    },
-    () => {
-      cursorAutoHideSettingEnabled = false;
-      syncCursorListener();
-    }
-  );
-}
-
-export function listenForPopupMessages(): void {
-  if (hasInitializedMessageListener) {
-    return;
-  }
-  hasInitializedMessageListener = true;
-
-  chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-    logContent("Received message:", request.action);
-    if (request.action === "updateSettings") {
-      clearTranslationCache();
-      applyLoggingSetting();
-      hideCursorOnIdle();
-      handleSettings();
-      loadTranslationSettings();
-      loadLyricOffsetSettings();
-      loadPassiveScrollSetting();
-      loadDockSettings(() => {
-        syncDock();
-        hideDockOnIdleInFullscreen();
-      });
-      AppState.shouldInjectAlbumArt = "Unknown";
-      onAlbumArtEnabled(
-        () => {
-          AppState.shouldInjectAlbumArt = true;
-          reloadAlbumArt();
-        },
-        () => {
-          AppState.shouldInjectAlbumArt = false;
-          reloadAlbumArt();
-        }
-      );
-      reloadLyrics();
-    } else if (request.action === "clearCache") {
-      try {
-        clearCache();
+    if (changed.some(key => TRANSLATION_KEYS.includes(key))) {
+      const before = translationStateKey();
+      loadTranslationSettings(() => {
+        // The dock toggle already updated AppState and reloaded; only react to outside edits.
+        if (translationStateKey() === before) return;
+        clearTranslationCache();
         reloadLyrics();
-
-        sendResponse({ success: true });
-      } catch {
-        sendResponse({ success: false });
-      }
+      });
+    }
+    if (changed.some(key => OFFSET_KEYS.includes(key))) {
+      loadLyricOffsetSettings();
+    }
+    if (changes.isPassiveScrollEnabled) {
+      loadPassiveScrollSetting();
+    }
+    if (changes.cacheClearedAt) {
+      clearTranslationCache();
+      reloadLyrics();
     }
   });
 }
 
 export function loadPassiveScrollSetting(): void {
   getStorage({ isPassiveScrollEnabled: true }, items => {
-    AppState.isPassiveScrollEnabled = items.isPassiveScrollEnabled;
+    AppState.isPassiveScrollEnabled = items.isPassiveScrollEnabled !== false;
   });
-}
-
-// Keeps only known control keys, drops duplicates, and appends any missing ones so the
-// dock always has the full set regardless of stale or partial stored orders.
-function normalizeDockControlsOrder(stored: unknown): string[] {
-  const known = DOCK_CONTROL_ORDER_DEFAULT as readonly string[];
-  const order = Array.isArray(stored) ? stored.filter(key => typeof key === "string" && known.includes(key)) : [];
-  const unique = [...new Set(order)];
-  for (const key of known) {
-    if (!unique.includes(key)) unique.push(key);
-  }
-  return unique;
-}
-
-export function loadDockSettings(callback?: () => void): void {
-  getStorage(
-    [
-      "isControlsDockEnabled",
-      "controlsDockPosition",
-      "isControlsDockAutoHideInFullscreenEnabled",
-      "isUnisonPinnedDockEnabled",
-      "unisonPinnedDockPosition",
-      "isUnisonAutoHideInFullscreenEnabled",
-      "isDockSourceEnabled",
-      "isDockTranslateEnabled",
-      "isDockOffsetEnabled",
-      "isDockRefreshEnabled",
-      "dockControlsOrder",
-    ],
-    items => {
-      AppState.isControlsDockEnabled = items.isControlsDockEnabled ?? items.isUnisonPinnedDockEnabled ?? true;
-      AppState.controlsDockPosition =
-        items.controlsDockPosition ?? items.unisonPinnedDockPosition ?? DOCK_DEFAULT_POSITION;
-      AppState.isControlsDockAutoHideInFullscreenEnabled =
-        items.isControlsDockAutoHideInFullscreenEnabled ?? items.isUnisonAutoHideInFullscreenEnabled ?? true;
-      AppState.isDockSourceEnabled = items.isDockSourceEnabled ?? true;
-      AppState.isDockTranslateEnabled = items.isDockTranslateEnabled ?? true;
-      AppState.isDockOffsetEnabled = items.isDockOffsetEnabled ?? true;
-      AppState.isDockRefreshEnabled = items.isDockRefreshEnabled ?? false;
-      AppState.dockControlsOrder = normalizeDockControlsOrder(items.dockControlsOrder);
-      callback?.();
-    }
-  );
-}
-
-function syncDock(): void {
-  if (!AppState.isControlsDockEnabled) {
-    unmountDock();
-    return;
-  }
-  mountDock(AppState.controlsDockPosition);
-  updateDockPosition(AppState.controlsDockPosition);
-}
-
-const DOCK_IDLE_HIDDEN_CLASS = `${DOCK_CLASS}--idle-hidden`;
-
-let dockIdleTimer: number | null = null;
-let dockMouseListener: ((this: Document, ev: MouseEvent) => any) | null = null;
-let wakeDockIdleFn: (() => void) | null = null;
-
-// Re-shows the dock and restarts the idle timer, for non-mouse interactions (keyboard
-// offset shortcuts) that should keep the dock visible in fullscreen.
-export function wakeDockIdle(): void {
-  wakeDockIdleFn?.();
-}
-
-function setDockIdleHidden(hidden: boolean): void {
-  for (const dock of Array.from(document.getElementsByClassName(DOCK_CLASS))) {
-    dock.classList.toggle(DOCK_IDLE_HIDDEN_CLASS, hidden);
-  }
-}
-
-export function hideDockOnIdleInFullscreen(): void {
-  if (dockMouseListener) {
-    document.removeEventListener("mousemove", dockMouseListener);
-    dockMouseListener = null;
-  }
-  if (dockIdleTimer) {
-    window.clearTimeout(dockIdleTimer);
-    dockIdleTimer = null;
-  }
-  setDockIdleHidden(false);
-  wakeDockIdleFn = null;
-
-  if (!AppState.isControlsDockAutoHideInFullscreenEnabled) return;
-
-  let dockVisible = true;
-
-  function hideDock() {
-    dockIdleTimer = null;
-    if (!dockVisible) return;
-    if (!document.getElementById("layout")?.hasAttribute("player-fullscreened")) return;
-    // Keep it up while the cursor is engaging the dock (clicking without moving the
-    // mouse would otherwise let this idle timer hide the dock mid-interaction).
-    if (document.querySelector(`.${DOCK_CLASS}__inner--expanded`)) {
-      dockIdleTimer = window.setTimeout(hideDock, 3000);
-      return;
-    }
-    setDockIdleHidden(true);
-    dockVisible = false;
-  }
-
-  function handleMouseMove() {
-    if (dockIdleTimer) window.clearTimeout(dockIdleTimer);
-    if (!dockVisible) {
-      setDockIdleHidden(false);
-      dockVisible = true;
-    }
-    dockIdleTimer = window.setTimeout(hideDock, 3000);
-  }
-
-  wakeDockIdleFn = handleMouseMove;
-  dockMouseListener = handleMouseMove;
-  document.addEventListener("mousemove", handleMouseMove);
 }
 
 /**
  * Loads translation settings from storage and updates AppState.
  */
-export function loadTranslationSettings(): void {
+export function loadTranslationSettings(callback?: () => void): void {
   getStorage(
     {
       isTranslateEnabled: false,
@@ -363,17 +76,16 @@ export function loadTranslationSettings(): void {
       translationDisabledLanguages: [],
     },
     items => {
-      AppState.isTranslateEnabled = items.isTranslateEnabled;
-      AppState.translationLanguage = items.translationLanguage || "en";
-      AppState.translationDisabledLanguages = items.translationDisabledLanguages || [];
+      AppState.isTranslateEnabled = items.isTranslateEnabled === true;
+      AppState.translationLanguage = typeof items.translationLanguage === "string" && items.translationLanguage
+        ? items.translationLanguage
+        : "en";
+      AppState.translationDisabledLanguages = Array.isArray(items.translationDisabledLanguages)
+        ? items.translationDisabledLanguages.filter((lang: unknown) => typeof lang === "string")
+        : [];
+      callback?.();
     }
   );
-}
-
-export function loadEndTimeModeSetting(): void {
-  getStorage({ endTimeMode: "total" }, items => {
-    AppState.endTimeMode = items.endTimeMode === "remaining" ? "remaining" : "total";
-  });
 }
 
 /**
@@ -388,9 +100,9 @@ export function loadLyricOffsetSettings(): void {
     },
     items => {
       applyGlobalOffsets({
-        globalLyricOffset: items.globalLyricOffset || 0,
-        richsyncOffsetTrim: items.richsyncOffsetTrim || 0,
-        lineOffsetTrim: items.lineOffsetTrim || 0,
+        globalLyricOffset: sanitizeOffset(items.globalLyricOffset),
+        richsyncOffsetTrim: sanitizeOffset(items.richsyncOffsetTrim),
+        lineOffsetTrim: sanitizeOffset(items.lineOffsetTrim),
       });
     }
   );
