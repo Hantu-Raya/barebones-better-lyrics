@@ -36,10 +36,8 @@ import { AppState } from "@core/appState";
 import { getBrowserVendor } from "@core/browser";
 import { t } from "@core/i18n";
 import type { ThumbnailElement } from "@modules/lyrics/requestSniffer/NextResponse";
-import { getArtworkMetadata } from "@modules/lyrics/requestSniffer/requestSniffer";
 import { measureWidth, type ObserverHandle, observeLayoutWidth, observeResize } from "@modules/ui/layout/layoutWidth";
 import { lyricsElementAdded, mainView } from "@modules/ui/mainLyricsView";
-import { publishPictureInPictureLyrics } from "@modules/ui/pictureInPicture/lyricsPublisher";
 import {
   createFullscreenControls,
   type FullscreenControlsHandle,
@@ -48,33 +46,12 @@ import {
 import { activateBylineLink, getBylineLinks, observeByline } from "@modules/ui/playerControls/playerBarControls";
 import type { PlaybackSnapshot } from "@modules/ui/playerControls/playhead";
 import { getResumeScrollElement } from "@modules/ui/resumeScrollButton";
-import { getRequest, setRequest } from "@modules/unison/lyricsRequestTracker";
-import { sealMarks } from "@modules/unison/gamification";
-import { appendInlineProfile, buildSeal } from "@modules/unison/gamificationRender";
-import type { UnisonLyricsRequest } from "@modules/unison/types";
-import { requestLyrics } from "@modules/unison/unisonApi";
 import { reflow, toMs } from "@braccato/core/util";
-import { generatePetName } from "@/core/keyIdentity";
-import { byId, deleteVote, type UnisonData, vote } from "../lyrics/providers/unison";
 import { buildControlsSegment, buildSourceSlot, closeSourceMenu } from "./lyricsDock/controls";
 import { parseSvgString, syncTypeColors, syncTypeIcons } from "./lyricsDock/icons";
 import { loadSavedOffset } from "./lyricsDock/offset";
 import { scrollEventHandler } from "./observer";
-import { showReportModal } from "./reportLyrics";
-import { logCore, warnUnison } from "@core/logger";
-
-const voteIcons = {
-  upvote: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><g fill="none"><path fill="currentColor" fill-opacity=".16" d="M7.895 7.69c-.294.3-.598.534-.895.71v12.334l8.509 1.223a4.1 4.1 0 0 0 2.82-.616a4.26 4.26 0 0 0 1.756-2.335l1.763-5.753a3.48 3.48 0 0 0-.497-3.04a3.36 3.36 0 0 0-1.183-1.023a3.3 3.3 0 0 0-1.509-.367h-3.633a9.7 9.7 0 0 0 .496-1.706a9 9 0 0 0 .164-1.706c0-.904-.352-1.772-.979-2.412C14.081 2.36 13.231 2 12.345 2s-1.736.36-2.362 1a3.45 3.45 0 0 0-.979 2.411c0 .597-.324 1.478-1.109 2.28"/><path stroke="currentColor" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="1.5" d="M7.895 7.69c-.294.3-.598.534-.895.71v12.334l8.509 1.223a4.1 4.1 0 0 0 2.82-.616a4.26 4.26 0 0 0 1.756-2.335l1.763-5.753a3.48 3.48 0 0 0-.497-3.04a3.36 3.36 0 0 0-1.183-1.023a3.3 3.3 0 0 0-1.509-.367h-3.633a9.7 9.7 0 0 0 .496-1.706a9 9 0 0 0 .164-1.706c0-.904-.352-1.772-.979-2.412C14.081 2.36 13.231 2 12.345 2s-1.736.36-2.362 1a3.45 3.45 0 0 0-.979 2.411c0 .597-.324 1.478-1.109 2.28ZM6.2 7H2.8a.8.8 0 0 0-.8.8v13.4a.8.8 0 0 0 .8.8h3.4a.8.8 0 0 0 .8-.8V7.8a.8.8 0 0 0-.8-.8Z"/></g></svg>`,
-  downvote: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><g fill="none"><path fill="currentColor" fill-opacity=".16" d="M7.895 16.31A4.4 4.4 0 0 0 7 15.6V3.266l8.509-1.223a4.1 4.1 0 0 1 2.82.616a4.25 4.25 0 0 1 1.756 2.335l1.763 5.753a3.48 3.48 0 0 1-.497 3.04c-.31.43-.716.781-1.183 1.023a3.3 3.3 0 0 1-1.509.367h-3.633q.326.83.496 1.706a9 9 0 0 1 .164 1.706c0 .904-.352 1.772-.979 2.412c-.626.64-1.476.999-2.362.999s-1.736-.36-2.362-1a3.45 3.45 0 0 1-.979-2.411c0-.598-.324-1.478-1.109-2.28"/><path stroke="currentColor" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="1.5" d="M7.895 16.31A4.4 4.4 0 0 0 7 15.6V3.266l8.509-1.223a4.1 4.1 0 0 1 2.82.616a4.25 4.25 0 0 1 1.756 2.335l1.763 5.753a3.48 3.48 0 0 1-.497 3.04c-.31.43-.716.781-1.183 1.023a3.3 3.3 0 0 1-1.509.367h-3.633q.326.83.496 1.706a9 9 0 0 1 .164 1.706c0 .904-.352 1.772-.979 2.412c-.626.64-1.476.999-2.362.999s-1.736-.36-2.362-1a3.45 3.45 0 0 1-.979-2.411c0-.598-.324-1.478-1.109-2.28ZM6.2 17H2.8a.8.8 0 0 1-.8-.8V2.8a.8.8 0 0 1 .8-.8h3.4a.8.8 0 0 1 .8.8v13.4a.8.8 0 0 1-.8.8Z"/></g></svg>`,
-  report: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20"><g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"><path fill="currentColor" fill-opacity=".16" d="M36 35H12V21c0-6.627 5.373-12 12-12s12 5.373 12 12z"/><path stroke-linecap="round" d="M8 42h32M4 13l3 1m6-10l1 3m-4 3L7 7"/></g></svg>`,
-};
-
-const VOTE_ACTIVE_CLASS = `${FOOTER_CLASS}__vote--active`;
-
-function appendIconTo(button: HTMLElement, svgString: string): void {
-  const svg = parseSvgString(svgString);
-  if (svg) button.appendChild(svg);
-}
+import { logCore } from "@core/logger";
 
 const providerDisplayInfo: Record<string, { name: string; syncType: SyncType }> = Object.fromEntries(
   PROVIDER_CONFIGS.map(p => [p.key, { name: p.displayName, syncType: p.syncType }])
@@ -110,145 +87,6 @@ function createActionButton(options: ActionButtonOptions): HTMLElement {
   link.style.height = "100%";
   container.appendChild(link);
 
-  return container;
-}
-
-// -- Request Synced Version Button --------------------------
-
-interface RequestButtonMeta {
-  videoId: string;
-  song: string;
-  artist: string;
-}
-
-function thumbnailUrlFor(videoId: string): string {
-  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-async function resolveArtworkUrl(videoId: string): Promise<string> {
-  const sniffed = await getArtworkMetadata(videoId);
-  if (sniffed?.thumbnail?.url) return getHighResImageUrl(sniffed.thumbnail);
-
-  const ytImg = document.querySelector<HTMLImageElement>("#thumbnail>#img");
-  if (ytImg?.src) return getHighResImageUrl({ url: ytImg.src, width: 0, height: 0 });
-
-  return thumbnailUrlFor(videoId);
-}
-
-function requestedLabel(requestCount: number): string {
-  if (requestCount <= 1) return t("lyrics_requestedFirst");
-  if (requestCount === 2) return t("lyrics_requestedOneOther");
-  return t("lyrics_requestedNOthers", String(requestCount - 1));
-}
-
-function errorLabelFor(status: number | undefined): string {
-  if (status === 429) return t("lyrics_requestErrorRateLimit");
-  if (status === undefined) return t("lyrics_requestErrorNetwork");
-  if (status >= 500) return t("lyrics_requestErrorServer");
-  return t("lyrics_requestErrorGeneric");
-}
-
-function createRequestSyncedButton(meta: RequestButtonMeta): HTMLElement {
-  const container = document.createElement("div");
-  container.className = `${FOOTER_CLASS}__container`;
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.style.height = "100%";
-  button.style.background = "none";
-  button.style.border = "none";
-  button.style.color = "inherit";
-  button.style.font = "inherit";
-  button.style.cursor = "pointer";
-  button.style.padding = "0";
-
-  const setLabel = (text: string) => {
-    button.textContent = text;
-  };
-
-  const setDisabled = (disabled: boolean) => {
-    button.disabled = disabled;
-    button.style.cursor = disabled ? "default" : "pointer";
-  };
-
-  let terminalState: "none" | "requested" | "landed" = "none";
-
-  const revertToIdle = () => {
-    setLabel(t("lyrics_requestSyncedVersion"));
-    setDisabled(false);
-  };
-
-  const showRequested = (requestCount: number) => {
-    terminalState = "requested";
-    setLabel(requestedLabel(requestCount));
-    setDisabled(true);
-  };
-
-  const showLanded = () => {
-    terminalState = "landed";
-    setLabel(t("lyrics_requestSyncedLanded"));
-    setDisabled(false);
-  };
-
-  const showErrorTemporarily = (text: string) => {
-    setLabel(text);
-    setDisabled(true);
-    window.setTimeout(() => {
-      if (terminalState === "none") revertToIdle();
-    }, 5000);
-  };
-
-  setLabel(t("lyrics_requestSyncedVersion"));
-  setDisabled(true);
-
-  getRequest(meta.videoId).then(entry => {
-    if (entry && terminalState === "none") {
-      showRequested(entry.requestCount);
-    } else if (terminalState === "none") {
-      setDisabled(false);
-    }
-  });
-
-  button.addEventListener("click", async () => {
-    if (terminalState === "landed") {
-      location.reload();
-      return;
-    }
-    if (terminalState === "requested") return;
-
-    setDisabled(true);
-
-    const submission: UnisonLyricsRequest = {
-      videoId: meta.videoId,
-      song: meta.song,
-      artist: meta.artist,
-      thumbnailUrl: await resolveArtworkUrl(meta.videoId),
-    };
-
-    const result = await requestLyrics(submission);
-
-    if (!result.success || !result.data) {
-      warnUnison("requestLyrics failed", {
-        videoId: meta.videoId,
-        status: result.status,
-        error: result.error,
-      });
-      showErrorTemporarily(errorLabelFor(result.status));
-      return;
-    }
-
-    const success = result.data;
-
-    if (success.status === "already_available") {
-      showLanded();
-      return;
-    }
-
-    await setRequest(meta.videoId, success.requestCount);
-    showRequested(success.requestCount);
-  });
-
-  container.appendChild(button);
   return container;
 }
 
@@ -340,9 +178,7 @@ export function addFooter(
   album: string,
   duration: number,
   providerKey?: string,
-  videoId?: string,
-  unisonData?: UnisonData,
-  showRequestButton = false
+  videoId?: string
 ): void {
   if (document.getElementsByClassName(FOOTER_CLASS).length !== 0) {
     document.getElementsByClassName(FOOTER_CLASS)[0].remove();
@@ -353,7 +189,7 @@ export function addFooter(
   footer.classList.add(FOOTER_CLASS);
   lyricsElement.appendChild(footer);
   observeFooterForRecalc(footer);
-  createFooter(song, artist, album, duration, videoId, showRequestButton);
+  createFooter(song, artist);
 
   const footerLink = document.getElementById("betterLyricsFooterLink") as HTMLAnchorElement;
   sourceHref = sourceHref || HOMEPAGE_URL;
@@ -387,27 +223,9 @@ export function addFooter(
     mountDock(AppState.controlsDockPosition);
   }
 
-  unmountVotingSegment();
-  if (source === "Unison" && unisonData) {
-    AppState.currentUnisonData = unisonData;
-    footer.appendChild(createUnisonFooterCard(unisonData));
-    if (AppState.isControlsDockEnabled) {
-      mountVotingSegment(unisonData);
-    }
-  } else {
-    AppState.currentUnisonData = null;
-  }
-
   updateNoLyricsSuppression();
 }
 
-const unisonControlsRegistry = {
-  upvotes: [] as HTMLButtonElement[],
-  downvotes: [] as HTMLButtonElement[],
-  scoreLineRefs: [] as ScoreLineRefs[],
-};
-
-let unisonDockObserver: IntersectionObserver | null = null;
 let layoutAttrObserver: MutationObserver | null = null;
 let dockHoverActive = false;
 
@@ -471,17 +289,12 @@ export function setFullscreenNoLyricsState(noLyrics: boolean): void {
   document.querySelector("#player-page")?.toggleAttribute("blyrics-no-lyrics", noLyrics);
 }
 
-function setVotingSegmentHidden(hidden: boolean): void {
-  document.querySelector(`.${DOCK_CLASS}__voting`)?.classList.toggle(`${DOCK_CLASS}__voting--hidden`, hidden);
-}
-
 function updateNoLyricsSuppression(): void {
   const inner = document.getElementsByClassName(`${DOCK_CLASS}__inner`)[0];
   if (!inner) return;
   const controls = inner.querySelector(`.${DOCK_CLASS}__controls`);
   const hasControls = !!controls && controls.childElementCount > 0;
-  const hasVoting = !!inner.querySelector(`.${DOCK_CLASS}__voting`);
-  setDockSuppression("noLyrics", !hasControls && !hasVoting);
+  setDockSuppression("noLyrics", !hasControls);
 }
 
 function applyDockSuppression(): void {
@@ -498,131 +311,6 @@ function setDockSuppression(reason: DockSuppressionReason, suppressed: boolean):
   if (suppressed) dockSuppressionReasons.add(reason);
   else dockSuppressionReasons.delete(reason);
   applyDockSuppression();
-}
-
-function refreshUnisonControls(unisonData: UnisonData): void {
-  for (const btn of unisonControlsRegistry.upvotes) {
-    btn.classList.toggle(VOTE_ACTIVE_CLASS, unisonData.vote === 1);
-  }
-  for (const btn of unisonControlsRegistry.downvotes) {
-    btn.classList.toggle(VOTE_ACTIVE_CLASS, unisonData.vote === -1);
-  }
-  for (const refs of unisonControlsRegistry.scoreLineRefs) {
-    setScoreLine(refs, unisonData.effectiveScore, unisonData.votes);
-  }
-}
-
-function clearUnisonControlsRegistry(): void {
-  unisonControlsRegistry.upvotes.length = 0;
-  unisonControlsRegistry.downvotes.length = 0;
-  unisonControlsRegistry.scoreLineRefs.length = 0;
-}
-
-type VoteUpdateData = NonNullable<Awaited<ReturnType<typeof byId>>>;
-
-function applyServerVoteData(unisonData: UnisonData, data: VoteUpdateData): void {
-  unisonData.effectiveScore = data.effectiveScore;
-  unisonData.votes = data.voteCount;
-  unisonData.vote = data.userVote;
-  refreshUnisonControls(unisonData);
-}
-
-function setOptimisticVote(unisonData: UnisonData, value: 1 | -1 | null): void {
-  unisonData.vote = value;
-  refreshUnisonControls(unisonData);
-}
-
-function buildUnisonVoteButton(unisonData: UnisonData, voteValue: 1 | -1): HTMLButtonElement {
-  const btn = document.createElement("button");
-  btn.className = `${FOOTER_CLASS}__vote`;
-
-  appendIconTo(btn, voteValue === 1 ? voteIcons.upvote : voteIcons.downvote);
-  if (unisonData.vote === voteValue) btn.classList.add(VOTE_ACTIVE_CLASS);
-
-  const registry = voteValue === 1 ? unisonControlsRegistry.upvotes : unisonControlsRegistry.downvotes;
-  registry.push(btn);
-
-  btn.addEventListener("click", async e => {
-    e.stopPropagation();
-    const wasActive = unisonData.vote === voteValue;
-
-    if (wasActive) {
-      setOptimisticVote(unisonData, null);
-      const res = await deleteVote(unisonData.lyricsId);
-      if (!res.ok && res.status !== 404) {
-        setOptimisticVote(unisonData, voteValue);
-        return;
-      }
-      const data = await byId(unisonData.lyricsId);
-      if (data) applyServerVoteData(unisonData, data);
-      return;
-    }
-
-    const prevVote = unisonData.vote;
-    setOptimisticVote(unisonData, voteValue);
-    const res = await vote(unisonData.lyricsId, voteValue === 1);
-    if (!res.ok && res.status !== 409) {
-      setOptimisticVote(unisonData, prevVote);
-      return;
-    }
-    const data = await byId(unisonData.lyricsId);
-    if (!data) {
-      setOptimisticVote(unisonData, prevVote);
-      return;
-    }
-    applyServerVoteData(unisonData, data);
-  });
-
-  return btn;
-}
-
-function createUnisonFooterCard(unisonData: UnisonData): HTMLElement {
-  const unisonContainer = document.createElement("div");
-  unisonContainer.className = `${FOOTER_CLASS}__unison`;
-
-  const unisonCard = document.createElement("div");
-  unisonCard.className = `${FOOTER_CLASS}__container ${FOOTER_CLASS}__unison-card`;
-
-  if (unisonData.submitter) {
-    unisonCard.appendChild(createSubmitterBlock(unisonData.submitter, unisonData.marks));
-    const divider = document.createElement("div");
-    divider.className = `${FOOTER_CLASS}__unison-divider`;
-    unisonCard.appendChild(divider);
-  }
-
-  const actionsBlock = document.createElement("div");
-  actionsBlock.className = `${FOOTER_CLASS}__unison-actions-block`;
-
-  const actionRow = document.createElement("div");
-  actionRow.className = `${FOOTER_CLASS}__unison-actions`;
-
-  const unisonUpvote = buildUnisonVoteButton(unisonData, 1);
-  const unisonDownvote = buildUnisonVoteButton(unisonData, -1);
-
-  const { scoreLine, scoreLineRefs } = createScoreLine();
-  unisonControlsRegistry.scoreLineRefs.push(scoreLineRefs);
-  setScoreLine(scoreLineRefs, unisonData.effectiveScore, unisonData.votes);
-
-  const unisonReport = createReportButton(unisonData.lyricsId);
-
-  actionRow.appendChild(unisonUpvote);
-  actionRow.appendChild(unisonDownvote);
-  actionRow.appendChild(unisonReport);
-
-  actionsBlock.appendChild(actionRow);
-  actionsBlock.appendChild(scoreLine);
-
-  unisonCard.appendChild(actionsBlock);
-  unisonContainer.appendChild(unisonCard);
-
-  unisonContainer.addEventListener("click", e => {
-    if ((e.target as HTMLElement).closest("button")) return;
-    const url = new URL(chrome.runtime.getURL("pages/unison.html"));
-    url.searchParams.set("id", String(unisonData.lyricsId));
-    window.open(url.toString(), "_blank", "noopener,noreferrer");
-  });
-
-  return unisonContainer;
 }
 
 const DOCK_PROXIMITY = 104;
@@ -910,47 +598,8 @@ export function refreshDockSources(): void {
   }, DOCK_FX_MS + 40);
 }
 
-export function mountVotingSegment(unisonData: UnisonData): void {
-  const inner = document.querySelector(`.${DOCK_CLASS}__inner`);
-  if (!inner) return;
-  if (inner.querySelector(`.${DOCK_CLASS}__voting`)) return;
-
-  const segment = document.createElement("div");
-  segment.className = `${DOCK_CLASS}__voting`;
-  const divider = document.createElement("span");
-  divider.className = `${DOCK_CLASS}__divider`;
-  segment.appendChild(divider);
-  segment.appendChild(buildUnisonVoteButton(unisonData, 1));
-  segment.appendChild(buildUnisonVoteButton(unisonData, -1));
-  segment.appendChild(createReportButton(unisonData.lyricsId));
-  inner.appendChild(segment);
-  animateDockEnter(segment);
-
-  const card = document.querySelector<HTMLElement>(`.${FOOTER_CLASS}__unison-card`);
-  if (card) {
-    unisonDockObserver = new IntersectionObserver(
-      entries => {
-        for (const entry of entries) {
-          setVotingSegmentHidden(entry.isIntersecting);
-        }
-      },
-      { threshold: 0.4 }
-    );
-    unisonDockObserver.observe(card);
-  }
-}
-
-function unmountVotingSegment(): void {
-  if (unisonDockObserver) {
-    unisonDockObserver.disconnect();
-    unisonDockObserver = null;
-  }
-  document.querySelector(`.${DOCK_CLASS}__voting`)?.remove();
-}
-
 export function unmountDock(): void {
   dockControlsSwapFinalize?.();
-  unmountVotingSegment();
   hidePlayerBarOnDockLeave();
   disconnectLayoutAttrObserver();
   removeDockProximityListener();
@@ -962,82 +611,6 @@ export function unmountDock(): void {
 export function updateDockPosition(position: string): void {
   const dock = document.getElementsByClassName(DOCK_CLASS)[0] as HTMLElement | undefined;
   if (dock) dock.dataset.position = position;
-}
-
-function createSubmitterBlock(
-  submitter: NonNullable<UnisonData["submitter"]>,
-  marks: UnisonData["marks"]
-): HTMLElement {
-  const authorBlock = document.createElement("div");
-  authorBlock.className = `${FOOTER_CLASS}__unison-author`;
-
-  const authorRow = document.createElement("div");
-  authorRow.className = `${FOOTER_CLASS}__unison-author-row`;
-
-  const handleEl = document.createElement("strong");
-  handleEl.className = `${FOOTER_CLASS}__author-name`;
-  handleEl.textContent = submitter.displayName ?? generatePetName(submitter.keyId);
-
-  appendInlineProfile(authorRow, handleEl, submitter);
-  authorBlock.appendChild(authorRow);
-
-  const seals = sealMarks(marks);
-  if (seals.length) {
-    for (const mark of seals) authorBlock.appendChild(buildSeal(mark));
-  } else {
-    const subLabel = document.createElement("div");
-    subLabel.className = `${FOOTER_CLASS}__unison-author-label`;
-    subLabel.textContent = t("unison_submitted_this");
-    authorBlock.appendChild(subLabel);
-  }
-  return authorBlock;
-}
-
-function createScoreLine(): { scoreLine: HTMLElement; scoreLineRefs: ScoreLineRefs } {
-  const scoreLine = document.createElement("div");
-  scoreLine.className = `${FOOTER_CLASS}__unison-score-line`;
-  const scoreNum = document.createElement("strong");
-  const scoreLabel = document.createElement("span");
-  const scoreSeparator = document.createElement("span");
-  scoreSeparator.textContent = " · ";
-  const voteNum = document.createElement("strong");
-  const voteLabel = document.createElement("span");
-  scoreLine.appendChild(scoreNum);
-  scoreLine.appendChild(scoreLabel);
-  scoreLine.appendChild(scoreSeparator);
-  scoreLine.appendChild(voteNum);
-  scoreLine.appendChild(voteLabel);
-  return { scoreLine, scoreLineRefs: { scoreNum, scoreLabel, voteNum, voteLabel } };
-}
-
-function createReportButton(lyricsId: number): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.className = `${FOOTER_CLASS}__vote`;
-  button.addEventListener("click", e => {
-    e.stopPropagation();
-    showReportModal(lyricsId);
-  });
-
-  appendIconTo(button, voteIcons.report);
-  return button;
-}
-
-interface ScoreLineRefs {
-  scoreNum: HTMLElement;
-  scoreLabel: HTMLElement;
-  voteNum: HTMLElement;
-  voteLabel: HTMLElement;
-}
-
-function formatScoreNumber(score: number): string {
-  return Number.isInteger(score) ? score.toString() : score.toFixed(2);
-}
-
-function setScoreLine(refs: ScoreLineRefs, score: number, votes: number): void {
-  refs.scoreNum.textContent = formatScoreNumber(score);
-  refs.scoreLabel.textContent = ` ${t("unison_score_label")}`;
-  refs.voteNum.textContent = String(votes);
-  refs.voteLabel.textContent = ` ${votes === 1 ? t("unison_vote_singular") : t("unison_vote_plural")}`;
 }
 
 function shouldRenderShadersPromo(): boolean {
@@ -1056,14 +629,7 @@ function getShadersStoreUrl(): string {
  * @param album - Album name
  * @param duration - Song duration in seconds
  */
-function createFooter(
-  song: string,
-  artist: string,
-  album: string,
-  duration: number,
-  videoId?: string,
-  showRequestButton = false
-): void {
+function createFooter(song: string, artist: string): void {
   try {
     const footer = document.getElementsByClassName(FOOTER_CLASS)[0] as HTMLElement;
     footer.replaceChildren();
@@ -1110,17 +676,6 @@ function createFooter(
 
     footer.appendChild(footerContainer);
     footer.appendChild(geniusContainer);
-    if (videoId) {
-      footer.appendChild(
-        createActionButton({
-          text: t("lyrics_submitToUnison"),
-          href: buildUnisonSubmitUrl(song, artist, album, duration, videoId).toString(),
-        })
-      );
-    }
-    if (videoId && showRequestButton) {
-      footer.appendChild(createRequestSyncedButton({ videoId, song, artist }));
-    }
     chrome.storage.sync.get({ isShadersPromoEnabled: true }, settings => {
       if (!discordLink.isConnected) return;
       if (!settings.isShadersPromoEnabled) return;
@@ -1498,13 +1053,7 @@ export function showYtThumbnail(): void {
  * @param album - Album name
  * @param duration - Song duration in seconds
  */
-export function addNoLyricsButton(
-  song: string,
-  artist: string,
-  album: string,
-  duration: number,
-  videoId?: string
-): void {
+export function addNoLyricsButton(song: string, artist: string): void {
   const lyricsWrapper = document.getElementById(LYRICS_WRAPPER_ID);
   if (!lyricsWrapper) return;
 
@@ -1523,28 +1072,7 @@ export function addNoLyricsButton(
 
   buttonContainer.appendChild(geniusSearch);
 
-  if (videoId) {
-    buttonContainer.appendChild(
-      createActionButton({
-        text: t("lyrics_submitToUnison"),
-        href: buildUnisonSubmitUrl(song, artist, album, duration, videoId).toString(),
-      })
-    );
-    buttonContainer.appendChild(createRequestSyncedButton({ videoId, song, artist }));
-  }
-
   lyricsWrapper.appendChild(buttonContainer);
-}
-
-function buildUnisonSubmitUrl(song: string, artist: string, album: string, duration: number, videoId: string): URL {
-  const url = new URL(chrome.runtime.getURL("pages/unison.html"));
-  url.searchParams.set("submit", "true");
-  if (song) url.searchParams.set("song", song);
-  if (artist) url.searchParams.set("artist", artist);
-  if (album) url.searchParams.set("album", album);
-  if (duration) url.searchParams.set("duration", Math.round(duration).toString());
-  url.searchParams.set("videoId", videoId);
-  return url;
 }
 
 /**
@@ -1616,10 +1144,6 @@ export function cleanup(): void {
   // The dock persists across re-injections (updated in place by addFooter) so a
   // provider switch or toggle never tears it out of the DOM. It is removed only when
   // there are no lyrics (addNoLyricsButton) or the dock setting is disabled.
-  unmountVotingSegment();
-  clearUnisonControlsRegistry();
-  AppState.currentUnisonData = null;
-
   getResumeScrollElement().setAttribute("autoscroll-hidden", "true");
 
   const buttonContainer = document.querySelector(".blyrics-no-lyrics-button-container");
@@ -1628,7 +1152,6 @@ export function cleanup(): void {
   }
 
   clearLyrics();
-  publishPictureInPictureLyrics();
 }
 
 /**

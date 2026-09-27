@@ -4,28 +4,17 @@ import {
   DOCK_CONTROL_ORDER_DEFAULT,
   DOCK_DEFAULT_POSITION,
   ROMANIZATION_LANGUAGES,
-  UNISON_API_BASE_URL,
 } from "@constants";
 import { attachHoldRepeat } from "@core/holdRepeat";
 import { getLanguageDisplayName, initI18n, loadLocaleOverride, SUPPORTED_LOCALES, t } from "@core/i18n";
-import {
-  exportIdentity,
-  getDisplayName,
-  getResolvedDisplayName,
-  importIdentity,
-  invalidateDisplayName,
-  signPayload,
-} from "@core/keyIdentity";
 import { clearAllOffsets, getOffsetInfo } from "@core/storage";
 import { parseSvgString, syncTypeColors } from "@modules/ui/lyricsDock/icons";
 import { migrateLetterWavePref, type LetterWavePref } from "@modules/settings/letterWave";
 import { mergePreferredProviders } from "@modules/lyrics/providers/providerList";
-import { fetchOwnGamification, renderIdentityStats } from "@modules/unison/gamificationRender";
 import Sortable from "sortablejs";
 import { showModal } from "./editor/ui/feedback";
 import { initStoreUI, setupYourThemesButton } from "./store/store";
 import { checkForStableRelease } from "./updateNotice";
-import { errorCore, warnCore } from "@core/logger";
 
 interface Options {
   isLogsEnabled: boolean;
@@ -37,13 +26,6 @@ interface Options {
   isStylizedAnimationsEnabled: boolean;
   letterWavePref: LetterWavePref;
   isPassiveScrollEnabled: boolean;
-  isPictureInPictureEnabled: boolean;
-  isPictureInPictureAutoRestoreEnabled: boolean;
-  pipWindowLayout: string;
-  pipArtworkTransition: string;
-  pipTextTransition: string;
-  pipMarqueeEnabled: boolean;
-  pipProgressBarEnabled: boolean;
   isTranslateEnabled: boolean;
   translationLanguage: string;
   isCursorAutoHideEnabled: boolean;
@@ -60,7 +42,6 @@ interface Options {
   isDockRomanizeEnabled: boolean;
   isDockOffsetEnabled: boolean;
   isDockRefreshEnabled: boolean;
-  isDockPictureInPictureEnabled: boolean;
   dockControlsOrder: string[];
   globalLyricOffset: number;
   richsyncOffsetTrim: number;
@@ -102,15 +83,6 @@ const getOptionsFromForm = (): Options => {
     isStylizedAnimationsEnabled: (document.getElementById("isStylizedAnimationsEnabled") as HTMLInputElement).checked,
     letterWavePref: getLetterWaveSwitchState(),
     isPassiveScrollEnabled: (document.getElementById("isPassiveScrollEnabled") as HTMLInputElement).checked,
-    isPictureInPictureEnabled: (document.getElementById("isPictureInPictureEnabled") as HTMLInputElement).checked,
-    isPictureInPictureAutoRestoreEnabled: (
-      document.getElementById("isPictureInPictureAutoRestoreEnabled") as HTMLInputElement
-    ).checked,
-    pipWindowLayout: (document.getElementById("pipWindowLayout") as HTMLSelectElement).value,
-    pipArtworkTransition: (document.getElementById("pipArtworkTransition") as HTMLSelectElement).value,
-    pipTextTransition: (document.getElementById("pipTextTransition") as HTMLSelectElement).value,
-    pipMarqueeEnabled: (document.getElementById("pipMarqueeEnabled") as HTMLInputElement).checked,
-    pipProgressBarEnabled: (document.getElementById("pipProgressBarEnabled") as HTMLInputElement).checked,
     isTranslateEnabled: (document.getElementById("translate") as HTMLInputElement).checked,
     translationLanguage: (document.getElementById("translationLanguage") as HTMLInputElement).value,
     isCursorAutoHideEnabled: (document.getElementById("cursorAutoHide") as HTMLInputElement).checked,
@@ -129,8 +101,6 @@ const getOptionsFromForm = (): Options => {
     isDockRomanizeEnabled: (document.getElementById("isDockRomanizeEnabled") as HTMLInputElement).checked,
     isDockOffsetEnabled: (document.getElementById("isDockOffsetEnabled") as HTMLInputElement).checked,
     isDockRefreshEnabled: (document.getElementById("isDockRefreshEnabled") as HTMLInputElement).checked,
-    isDockPictureInPictureEnabled: (document.getElementById("isDockPictureInPictureEnabled") as HTMLInputElement)
-      .checked,
     dockControlsOrder: getDockControlsOrder(),
     globalLyricOffset: parseFloat((document.getElementById("globalLyricOffset") as HTMLInputElement).value) || 0,
     richsyncOffsetTrim: parseFloat((document.getElementById("richsyncOffsetTrim") as HTMLInputElement).value) || 0,
@@ -296,13 +266,6 @@ const restoreOptions = (): void => {
     isStylizedAnimationsEnabled: true,
     letterWavePref: "auto",
     isPassiveScrollEnabled: true,
-    isPictureInPictureEnabled: true,
-    isPictureInPictureAutoRestoreEnabled: false,
-    pipWindowLayout: "horizontal",
-    pipArtworkTransition: "shuffle",
-    pipTextTransition: "spring",
-    pipMarqueeEnabled: true,
-    pipProgressBarEnabled: true,
     isTranslateEnabled: false,
     translationLanguage: "en",
     isRomanizationEnabled: false,
@@ -335,7 +298,6 @@ const restoreOptions = (): void => {
     isDockRomanizeEnabled: true,
     isDockOffsetEnabled: true,
     isDockRefreshEnabled: false,
-    isDockPictureInPictureEnabled: true,
     dockControlsOrder: [...DOCK_CONTROL_ORDER_DEFAULT],
     globalLyricOffset: 0,
     richsyncOffsetTrim: 0,
@@ -368,7 +330,6 @@ const restoreOptions = (): void => {
 
   document.getElementById("clear-cache")!.addEventListener("click", () => clearTransientLyrics());
   setupUnisonActionsModal();
-  initPictureInPictureModal();
   initOffsetModal();
 };
 
@@ -386,14 +347,6 @@ const setOptionsInForm = (items: Options): void => {
     items.isStylizedAnimationsEnabled;
   setLetterWaveSwitchState(items.letterWavePref);
   (document.getElementById("isPassiveScrollEnabled") as HTMLInputElement).checked = items.isPassiveScrollEnabled;
-  (document.getElementById("isPictureInPictureEnabled") as HTMLInputElement).checked = items.isPictureInPictureEnabled;
-  (document.getElementById("isPictureInPictureAutoRestoreEnabled") as HTMLInputElement).checked =
-    items.isPictureInPictureAutoRestoreEnabled;
-  (document.getElementById("pipWindowLayout") as HTMLSelectElement).value = items.pipWindowLayout;
-  (document.getElementById("pipArtworkTransition") as HTMLSelectElement).value = items.pipArtworkTransition;
-  (document.getElementById("pipTextTransition") as HTMLSelectElement).value = items.pipTextTransition;
-  (document.getElementById("pipMarqueeEnabled") as HTMLInputElement).checked = items.pipMarqueeEnabled;
-  (document.getElementById("pipProgressBarEnabled") as HTMLInputElement).checked = items.pipProgressBarEnabled;
   (document.getElementById("translate") as HTMLInputElement).checked = items.isTranslateEnabled;
   (document.getElementById("translationLanguage") as HTMLInputElement).value = items.translationLanguage;
   (document.getElementById("isRomanizationEnabled") as HTMLInputElement).checked = items.isRomanizationEnabled;
@@ -407,14 +360,11 @@ const setOptionsInForm = (items: Options): void => {
   (document.getElementById("isDockRomanizeEnabled") as HTMLInputElement).checked = items.isDockRomanizeEnabled;
   (document.getElementById("isDockOffsetEnabled") as HTMLInputElement).checked = items.isDockOffsetEnabled;
   (document.getElementById("isDockRefreshEnabled") as HTMLInputElement).checked = items.isDockRefreshEnabled;
-  (document.getElementById("isDockPictureInPictureEnabled") as HTMLInputElement).checked =
-    items.isDockPictureInPictureEnabled;
   setOffsetDisplay("globalLyricOffset", items.globalLyricOffset);
   setOffsetDisplay("richsyncOffsetTrim", items.richsyncOffsetTrim);
   setOffsetDisplay("lineOffsetTrim", items.lineOffsetTrim);
   setDockControlsOrderInForm(items.dockControlsOrder);
   syncUnisonModalDependentState(items.isControlsDockEnabled);
-  syncPictureInPictureModalDependentState(items.isPictureInPictureEnabled);
   romanizationDisabledLanguages = items.romanizationDisabledLanguages || [];
   translationDisabledLanguages = items.translationDisabledLanguages || [];
   updateExclusionsConfigVisibility();
@@ -800,524 +750,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  document.getElementById("open-unison-btn")?.addEventListener("click", () => {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL("pages/unison.html"),
-    });
-  });
-
-  initIdentityUI();
-  initNicknameModal();
 });
-
-async function initIdentityUI(): Promise<void> {
-  const displayNameEl = document.getElementById("identity-display-name");
-  if (!displayNameEl) return;
-
-  try {
-    displayNameEl.textContent = await getDisplayName();
-  } catch (error) {
-    errorCore("Failed to load identity:", error);
-    displayNameEl.textContent = t("options_alert_identityLoadError");
-  }
-
-  void fetchOwnGamification().then(async user => {
-    const statsEl = document.getElementById("identity-stats");
-    const statsWrap = document.getElementById("identity-stats-container");
-    if (!user || !statsEl || !statsWrap) return;
-    const handle = (await getResolvedDisplayName().catch(() => null)) ?? undefined;
-    await renderIdentityStats(statsEl, user, handle);
-    statsWrap.hidden = false;
-  });
-
-  document.getElementById("export-identity-btn")?.addEventListener("click", handleExportIdentity);
-  document.getElementById("import-identity-btn")?.addEventListener("click", handleImportIdentity);
-  initImportIdentityModal();
-}
-
-type NicknameStatusKind =
-  | "idle"
-  | "typing"
-  | "checking"
-  | "available"
-  | "self"
-  | "taken"
-  | "invalid"
-  | "profane"
-  | "rateLimited"
-  | "submitting"
-  | "saved"
-  | "error";
-
-const NICKNAME_STATUS_ICON_MARKUP: Record<string, string> = {
-  check: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/></svg>`,
-  cross: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" clip-rule="evenodd"/></svg>`,
-  warn: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M6.701 2.252a1.5 1.5 0 0 1 2.598 0l5.196 9.001A1.5 1.5 0 0 1 13.196 13.5H2.804a1.5 1.5 0 0 1-1.299-2.247l5.196-9.001ZM8 5.5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 5.5Zm0 6.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd"/></svg>`,
-  info: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="14" height="14" aria-hidden="true"><path fill-rule="evenodd" d="M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM8 7a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 7Zm0-2.5a.875.875 0 1 1 0 1.75.875.875 0 0 1 0-1.75Z" clip-rule="evenodd"/></svg>`,
-  spinner: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true" class="nickname-status-spinner"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-opacity="0.25" stroke-width="2"/><path d="M14 8a6 6 0 0 0-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-};
-
-const NICKNAME_STATUS_ICON_FOR: Record<NicknameStatusKind, keyof typeof NICKNAME_STATUS_ICON_MARKUP | null> = {
-  idle: null,
-  typing: null,
-  checking: "spinner",
-  available: "check",
-  self: "info",
-  taken: "cross",
-  invalid: "warn",
-  profane: "warn",
-  rateLimited: "warn",
-  submitting: "spinner",
-  saved: "check",
-  error: "cross",
-};
-
-const NICKNAME_STATUS_ICON_NODES: Record<string, SVGElement> = (() => {
-  const parser = new DOMParser();
-  const nodes: Record<string, SVGElement> = {};
-  for (const [key, markup] of Object.entries(NICKNAME_STATUS_ICON_MARKUP)) {
-    nodes[key] = parser.parseFromString(markup, "image/svg+xml").documentElement as unknown as SVGElement;
-  }
-  return nodes;
-})();
-
-interface NicknameCheckResponse {
-  success: boolean;
-  data?: {
-    available: boolean;
-    reason?: "INVALID_FORMAT" | "TAKEN" | "SELF" | "RESERVED" | "PROFANE";
-  };
-}
-
-interface NicknameMutationResponse {
-  success: boolean;
-  data?: {
-    keyId: string;
-    displayName: string;
-  };
-}
-
-function getNicknameModalElements() {
-  const overlay = document.getElementById("nickname-modal-overlay");
-  const closeBtn = document.getElementById("nickname-modal-close");
-  const cancelBtn = document.getElementById("nickname-modal-cancel");
-  const saveBtn = document.getElementById("nickname-modal-save") as HTMLButtonElement | null;
-  const resetBtn = document.getElementById("nickname-modal-reset") as HTMLButtonElement | null;
-  const input = document.getElementById("nickname-modal-input") as HTMLInputElement | null;
-  const status = document.getElementById("nickname-modal-status");
-  return { overlay, closeBtn, cancelBtn, saveBtn, resetBtn, input, status };
-}
-
-function openNicknameModal(): void {
-  const { overlay, input, saveBtn } = getNicknameModalElements();
-  if (!overlay || !input || !saveBtn) return;
-  const display = document.getElementById("identity-display-name");
-  input.value = display?.textContent ?? "";
-  saveBtn.disabled = true;
-  overlay.classList.add("active");
-  setTimeout(() => {
-    input.focus();
-    input.select();
-  }, 100);
-}
-
-function closeNicknameModal(): void {
-  const { overlay } = getNicknameModalElements();
-  overlay?.classList.remove("active");
-}
-
-function initNicknameModal(): void {
-  const { overlay, closeBtn, cancelBtn, saveBtn, resetBtn, input, status } = getNicknameModalElements();
-  if (!overlay || !closeBtn || !cancelBtn || !saveBtn || !resetBtn || !input || !status) return;
-
-  const editBtn = document.getElementById("nickname-edit-btn");
-  editBtn?.addEventListener("click", openNicknameModal);
-
-  closeBtn.addEventListener("click", closeNicknameModal);
-  cancelBtn.addEventListener("click", closeNicknameModal);
-
-  overlay.addEventListener("click", e => {
-    if (e.target === overlay) closeNicknameModal();
-  });
-
-  document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && overlay.classList.contains("active")) {
-      closeNicknameModal();
-    }
-  });
-
-  let checkSeq = 0;
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const setStatus = (kind: NicknameStatusKind): void => {
-    status.dataset.state = kind;
-    saveBtn.disabled = kind !== "available";
-    if (kind === "idle" || kind === "typing") {
-      status.replaceChildren();
-      return;
-    }
-    const iconKey = NICKNAME_STATUS_ICON_FOR[kind];
-    const label = document.createElement("span");
-    label.textContent = t(`options_nickname_status_${kind}`);
-    if (iconKey) {
-      status.replaceChildren(NICKNAME_STATUS_ICON_NODES[iconKey].cloneNode(true), label);
-    } else {
-      status.replaceChildren(label);
-    }
-  };
-
-  setStatus("idle");
-
-  const mapCheckResult = (data: NicknameCheckResponse["data"]): NicknameStatusKind => {
-    if (!data) return "error";
-    if (data.reason === "SELF") return "self";
-    if (data.reason === "INVALID_FORMAT") return "invalid";
-    if (data.reason === "PROFANE") return "profane";
-    if (data.reason === "TAKEN" || data.reason === "RESERVED") return "taken";
-    if (data.available) return "available";
-    return "error";
-  };
-
-  const runCheck = async (nickname: string, seq: number): Promise<void> => {
-    setStatus("checking");
-    try {
-      const signed = await signPayload({ nickname });
-      const response = await fetch(`${UNISON_API_BASE_URL}/auth/nickname/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signed),
-      });
-      if (seq !== checkSeq) return;
-      if (response.status === 429) {
-        setStatus("rateLimited");
-        return;
-      }
-      if (!response.ok) {
-        setStatus("error");
-        return;
-      }
-      const json = (await response.json()) as NicknameCheckResponse;
-      if (seq !== checkSeq) return;
-      setStatus(mapCheckResult(json.data));
-    } catch (error) {
-      if (seq !== checkSeq) return;
-      warnCore("Nickname availability check failed:", error);
-      setStatus("error");
-    }
-  };
-
-  input.addEventListener("input", () => {
-    const value = input.value;
-    const seq = ++checkSeq;
-    if (debounceTimer) clearTimeout(debounceTimer);
-    if (value.length === 0) {
-      setStatus("idle");
-      return;
-    }
-    setStatus("typing");
-    debounceTimer = setTimeout(() => {
-      if (seq !== checkSeq) return;
-      runCheck(value, seq);
-    }, 350);
-  });
-
-  const applyDisplayName = (newDisplayName: string): void => {
-    const identityEl = document.getElementById("identity-display-name");
-    if (identityEl) identityEl.textContent = newDisplayName;
-  };
-
-  saveBtn.addEventListener("click", async () => {
-    const nickname = input.value;
-    if (!nickname) return;
-    saveBtn.disabled = true;
-    resetBtn.disabled = true;
-    setStatus("submitting");
-    try {
-      const signed = await signPayload({ nickname });
-      const response = await fetch(`${UNISON_API_BASE_URL}/auth/nickname`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signed),
-      });
-      if (response.status === 400) {
-        setStatus("invalid");
-        resetBtn.disabled = false;
-        return;
-      }
-      if (response.status === 409) {
-        let conflict: NicknameStatusKind = "taken";
-        try {
-          const errJson = (await response.clone().json()) as { error?: string };
-          if (errJson.error === "NICKNAME_PROFANE") conflict = "profane";
-        } catch (err) {
-          warnCore("Nickname conflict body parse failed:", err);
-        }
-        setStatus(conflict);
-        resetBtn.disabled = false;
-        return;
-      }
-      if (response.status === 429) {
-        setStatus("rateLimited");
-        resetBtn.disabled = false;
-        return;
-      }
-      if (!response.ok) {
-        setStatus("error");
-        resetBtn.disabled = false;
-        return;
-      }
-      const json = (await response.json()) as NicknameMutationResponse;
-      const newDisplayName = json.data?.displayName ?? nickname;
-      invalidateDisplayName(newDisplayName);
-      applyDisplayName(newDisplayName);
-      setStatus("saved");
-      resetBtn.disabled = false;
-      closeNicknameModal();
-    } catch (error) {
-      warnCore("Nickname save failed:", error);
-      setStatus("error");
-      resetBtn.disabled = false;
-    }
-  });
-
-  resetBtn.addEventListener("click", async () => {
-    saveBtn.disabled = true;
-    resetBtn.disabled = true;
-    setStatus("submitting");
-    try {
-      const signed = await signPayload({});
-      const response = await fetch(`${UNISON_API_BASE_URL}/auth/nickname`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(signed),
-      });
-      if (response.status === 429) {
-        setStatus("rateLimited");
-        resetBtn.disabled = false;
-        return;
-      }
-      if (!response.ok) {
-        setStatus("error");
-        resetBtn.disabled = false;
-        return;
-      }
-      const json = (await response.json()) as NicknameMutationResponse;
-      const responseDisplayName = json.data?.displayName;
-      let resolvedDisplayName: string;
-      if (typeof responseDisplayName === "string" && responseDisplayName.length > 0) {
-        invalidateDisplayName(responseDisplayName);
-        resolvedDisplayName = responseDisplayName;
-      } else {
-        invalidateDisplayName();
-        resolvedDisplayName = await getDisplayName();
-      }
-      applyDisplayName(resolvedDisplayName);
-      input.value = resolvedDisplayName;
-      checkSeq++;
-      setStatus("saved");
-      resetBtn.disabled = false;
-      closeNicknameModal();
-    } catch (error) {
-      warnCore("Nickname reset failed:", error);
-      setStatus("error");
-      resetBtn.disabled = false;
-    }
-  });
-}
-
-async function handleExportIdentity(): Promise<void> {
-  try {
-    const displayName = await getDisplayName();
-    const exportData = await exportIdentity();
-    const filename = `better-lyrics-identity-${displayName}.json`;
-
-    chrome.permissions.contains({ permissions: ["downloads"] }, hasPermission => {
-      if (hasPermission) {
-        downloadIdentityFile(exportData, filename);
-      } else {
-        chrome.permissions.request({ permissions: ["downloads"] }, granted => {
-          if (granted) {
-            downloadIdentityFile(exportData, filename);
-          } else {
-            fallbackDownloadIdentity(exportData, filename);
-          }
-        });
-      }
-    });
-  } catch (error) {
-    errorCore("Failed to export identity:", error);
-    showAlert(t("options_alert_exportFailed"));
-  }
-}
-
-function downloadIdentityFile(content: string, filename: string): void {
-  const blob = new Blob([content], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  if (chrome.downloads) {
-    chrome.downloads
-      .download({
-        url: url,
-        filename: filename,
-        saveAs: true,
-      })
-      .then(() => {
-        showAlert(t("options_alert_fileSaveDialogOpened"));
-        URL.revokeObjectURL(url);
-      })
-      .catch(() => {
-        showAlert(t("options_alert_fileSaveFailed"));
-        URL.revokeObjectURL(url);
-      });
-  } else {
-    fallbackDownloadIdentity(content, filename);
-  }
-}
-
-function fallbackDownloadIdentity(content: string, filename: string): void {
-  const blob = new Blob([content], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  setTimeout(() => URL.revokeObjectURL(url), 100);
-
-  showAlert(t("options_alert_downloadInitiated"));
-}
-
-async function handleImportIdentity(): Promise<void> {
-  openImportIdentityModal();
-}
-
-// -- Import Identity Modal --------------------------
-
-function getImportIdentityModalElements() {
-  const overlay = document.getElementById("import-identity-modal-overlay");
-  const closeBtn = document.getElementById("import-identity-modal-close");
-  const fileBtn = document.getElementById("import-identity-file-btn");
-  const cancelBtn = document.getElementById("import-identity-cancel");
-  const confirmBtn = document.getElementById("import-identity-confirm");
-  const textarea = document.getElementById("import-identity-textarea") as HTMLTextAreaElement | null;
-  return { overlay, closeBtn, fileBtn, cancelBtn, confirmBtn, textarea };
-}
-
-function openImportIdentityModal(): void {
-  const { overlay, textarea } = getImportIdentityModalElements();
-  if (!overlay || !textarea) return;
-  textarea.value = "";
-  overlay.classList.add("active");
-  setTimeout(() => textarea.focus(), 100);
-}
-
-function closeImportIdentityModal(): void {
-  const { overlay } = getImportIdentityModalElements();
-  overlay?.classList.remove("active");
-}
-
-async function importIdentityFromJson(json: string): Promise<void> {
-  try {
-    await importIdentity(json);
-    await updateIdentityDisplay();
-    showAlert(t("options_alert_importSuccess"));
-    closeImportIdentityModal();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Invalid identity file";
-    showAlert(message);
-  }
-}
-
-function triggerIdentityFilePicker(): void {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json,application/json";
-  input.style.display = "none";
-
-  const cleanup = (): void => {
-    input.remove();
-  };
-
-  input.addEventListener("change", async event => {
-    try {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const text = await file.text();
-      await importIdentityFromJson(text);
-    } finally {
-      cleanup();
-    }
-  });
-
-  input.addEventListener("cancel", cleanup);
-
-  document.body.appendChild(input);
-  input.click();
-}
-
-function initImportIdentityModal(): void {
-  const { overlay, closeBtn, fileBtn, cancelBtn, confirmBtn, textarea } = getImportIdentityModalElements();
-  if (!overlay || !closeBtn || !fileBtn || !cancelBtn || !confirmBtn || !textarea) return;
-
-  closeBtn.addEventListener("click", closeImportIdentityModal);
-  cancelBtn.addEventListener("click", closeImportIdentityModal);
-
-  overlay.addEventListener("click", e => {
-    if (e.target === overlay) closeImportIdentityModal();
-  });
-
-  document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && overlay.classList.contains("active")) {
-      closeImportIdentityModal();
-    }
-  });
-
-  fileBtn.addEventListener("click", triggerIdentityFilePicker);
-
-  confirmBtn.addEventListener("click", async () => {
-    const json = textarea.value.trim();
-    if (!json) {
-      showAlert(t("options_alert_importEmpty"));
-      return;
-    }
-    await importIdentityFromJson(json);
-  });
-
-  textarea.addEventListener("dragover", e => {
-    if (!e.dataTransfer?.types.includes("Files")) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-    textarea.classList.add("dragging");
-  });
-
-  textarea.addEventListener("dragleave", () => {
-    textarea.classList.remove("dragging");
-  });
-
-  textarea.addEventListener("drop", async e => {
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
-    e.preventDefault();
-    textarea.classList.remove("dragging");
-    try {
-      textarea.value = await file.text();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to read file";
-      showAlert(message);
-    }
-  });
-}
-
-async function updateIdentityDisplay(): Promise<void> {
-  const displayNameEl = document.getElementById("identity-display-name");
-  if (displayNameEl) {
-    displayNameEl.textContent = await getDisplayName();
-  }
-}
 
 // -- Language Exclusions Modal --------------------------
 
@@ -1595,7 +1028,6 @@ function resetDockSettings(): void {
   (document.getElementById("isDockRomanizeEnabled") as HTMLInputElement).checked = true;
   (document.getElementById("isDockOffsetEnabled") as HTMLInputElement).checked = true;
   (document.getElementById("isDockRefreshEnabled") as HTMLInputElement).checked = false;
-  (document.getElementById("isDockPictureInPictureEnabled") as HTMLInputElement).checked = true;
   setUnisonPositionInForm(DOCK_DEFAULT_POSITION);
   setDockControlsOrderInForm([...DOCK_CONTROL_ORDER_DEFAULT]);
   syncUnisonModalDependentState(true);
@@ -1645,7 +1077,6 @@ function setupUnisonActionsModal(): void {
     "isDockRomanizeEnabled",
     "isDockOffsetEnabled",
     "isDockRefreshEnabled",
-    "isDockPictureInPictureEnabled",
   ]) {
     document.getElementById(id)?.addEventListener("change", debouncedSaveOptions);
   }
@@ -1673,38 +1104,6 @@ function setOffsetDisplay(id: string, value: number): void {
   if (input) input.value = String(value);
   const display = document.querySelector<HTMLElement>(`.offset-stepper__value[data-for="${id}"]`);
   if (display) display.textContent = formatOffsetDisplay(value);
-}
-
-// The controls live outside #options, so the blanket change listener over that
-// subtree does not reach them and each one is bound here instead.
-function initPictureInPictureModal(): void {
-  const openBtn = document.getElementById("pip-settings-btn");
-  const overlay = document.getElementById("pip-modal-overlay");
-  const closeBtn = document.getElementById("pip-modal-close");
-  if (!openBtn || !overlay || !closeBtn) return;
-
-  const close = (): void => overlay.classList.remove("active");
-  openBtn.addEventListener("click", () => overlay.classList.add("active"));
-  closeBtn.addEventListener("click", close);
-  overlay.addEventListener("click", event => {
-    if (event.target === overlay) close();
-  });
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && overlay.classList.contains("active")) close();
-  });
-
-  for (const control of overlay.querySelectorAll("input, select")) {
-    control.addEventListener("change", saveOptions);
-  }
-
-  const enabledToggle = document.getElementById("isPictureInPictureEnabled") as HTMLInputElement | null;
-  enabledToggle?.addEventListener("change", () => syncPictureInPictureModalDependentState(enabledToggle.checked));
-}
-
-function syncPictureInPictureModalDependentState(enabled: boolean): void {
-  const body = document.getElementById("pip-modal-body");
-  if (!body) return;
-  body.dataset.pipDisabled = enabled ? "false" : "true";
 }
 
 function initOffsetModal(): void {

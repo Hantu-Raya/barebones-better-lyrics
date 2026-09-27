@@ -49,9 +49,6 @@
 				<button class="tab" id="sources-tab" data-target="#sources-content">
 					__MSG_options_tab_sources__
 				</button>
-				<button class="tab" id="identity-tab" data-target="#identity-content">
-					__MSG_options_tab_identity__
-				</button>
 				<button class="tab" id="themes-tab" data-target="#themes-content">
 					__MSG_options_tab_themes__
 				</button>
@@ -172,13 +169,6 @@
 							<input type="checkbox" id="isShadersPromoEnabled">
 							<span class="checkmark"></span>
 						</label>
-					</div>
-					<div class="container">
-						<span>__MSG_options_display_pipWindow__</span>
-						<button class="small-btn" id="pip-settings-btn">
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path d="M13 17c0-1.886 0-2.828.586-3.414S15.114 13 17 13h1c1.886 0 2.828 0 3.414.586S22 15.114 22 17s0 2.828-.586 3.414S19.886 21 18 21h-1c-1.886 0-2.828 0-3.414-.586S13 18.886 13 17"></path><path fill-rule="evenodd" d="M10 3h4c3.771 0 5.657 0 6.828 1.172c.95.949 1.13 2.694 1.164 5.328c.012.937.018 1.405-.275 1.703c-.294.297-.768.297-1.717.297h-2.5c-2.828 0-4.243 0-5.121.879c-.879.878-.879 2.293-.879 5.121v2c0 .466 0 .699-.076.883a1 1 0 0 1-.541.54C10.699 21 10.466 21 10 21c-3.771 0-5.657 0-6.828-1.172S2 16.771 2 13v-2c0-3.771 0-5.657 1.172-6.828S6.229 3 10 3M8.03 6.97a.75.75 0 0 0-1.06 1.06l2.72 2.72H8.5a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 .75-.75v-3a.75.75 0 0 0-1.5 0v1.19z" clip-rule="evenodd"></path></svg>
-							<span>__MSG_options_manage__</span>
-						</button>
 					</div>
 					<div class="container">
 						<span>__MSG_options_display_unisonActions__</span>
@@ -388,10 +378,6 @@
 						</svg>
 
 						__MSG_options_sources_title__
-						<button class="unison-open-btn" id="open-unison-btn">
-							<img src="/images/icons/icon-48.png" alt="" width="14" height="14">
-							__MSG_options_sources_openUnison__
-						</button>
 					</h2>
 					<p>
 						__MSG_options_sources_description__
@@ -455,57 +441,6 @@
 						</button>
 						<div id="your-themes-dropdown"></div>
 					</div>
-				</div>
-			</div>
-		</div>
-		<div class="tab-content" id="identity-content">
-			<div class="settings-group">
-				<h2>
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M10.95 19.55q.5.3 1.05.288t1.05-.313l4.55-2.775q-1.25-.875-2.675-1.312T12 15t-2.937.438t-2.713 1.287zM12 13q1.45 0 2.475-1.025T15.5 9.5t-1.025-2.475T12 6T9.525 7.025T8.5 9.5t1.025 2.475T12 13m-1.05 8.875l-7-4.3q-.45-.275-.7-.725T3 15.875v-7.75q0-.525.25-.975t.7-.725l7-4.3q.5-.3 1.05-.3t1.05.3l7 4.3q.45.275.7.725t.25.975v7.75q0 .525-.25.975t-.7.725l-7 4.3q-.5.3-1.05.3t-1.05-.3"></path>
-					</svg>
-					__MSG_options_identity_title__
-				</h2>
-				<p>__MSG_options_identity_description__</p>
-				<div class="identity-warning" role="note">
-					<svg class="identity-warning__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="14" height="14" aria-hidden="true">
-						<path fill-rule="evenodd" d="M6.701 2.252a1.5 1.5 0 0 1 2.598 0l5.196 9.001A1.5 1.5 0 0 1 13.196 13.5H2.804a1.5 1.5 0 0 1-1.299-2.247l5.196-9.001ZM8 5.5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 5.5Zm0 6.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd"></path>
-					</svg>
-					<p class="identity-warning__text">__MSG_options_identity_warning__</p>
-				</div>
-				<div class="container container--small">
-					<p class="text-group__title">__MSG_options_identity_yourIdentity__</p>
-					<div class="identity-edit-row">
-						<code id="identity-display-name">__MSG_options_identity_loading__</code>
-						<button class="small-btn" id="nickname-edit-btn" aria-label="__MSG_options_nickname_editLabel__">
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
-								<path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.774a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.261-4.262a1.75 1.75 0 0 0 0-2.474Z"></path>
-								<path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9A.75.75 0 0 1 14 9v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z"></path>
-							</svg>
-							__MSG_options_nickname_edit__
-						</button>
-					</div>
-				</div>
-				<div class="container container--small">
-					<p>__MSG_options_identity_exportImport__</p>
-					<div class="button-row">
-						<button class="small-btn" id="export-identity-btn">
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-								<path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06l-3.22-3.22V16.5a.75.75 0 0 1-1.5 0V4.81L8.03 8.03a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM3 15.75a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd"></path>
-							</svg>
-							__MSG_options_identity_exportKey__
-						</button>
-						<button class="small-btn" id="import-identity-btn">
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-								<path fill-rule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Zm-9 13.5a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd"></path>
-							</svg>
-							__MSG_options_identity_importKey__
-						</button>
-					</div>
-				</div>
-				<div class="container container--small" id="identity-stats-container" hidden="">
-					<p class="text-group__title">__MSG_options_identity_unisonStats__</p>
-					<div id="identity-stats"></div>
 				</div>
 			</div>
 		</div>
@@ -638,10 +573,6 @@
 								<input type="checkbox" id="isDockRefreshEnabled">
 								<span class="control-cell__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path></svg></span>
 							</label>
-							<label class="control-cell" data-control="pictureInPicture" title="__MSG_options_unisonModal_controlPictureInPicture__">
-								<input type="checkbox" id="isDockPictureInPictureEnabled">
-								<span class="control-cell__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M11 21h-1c-3.771 0-5.657 0-6.828-1.172S2 16.771 2 13v-2c0-3.771 0-5.657 1.172-6.828S6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172S22 7.229 22 11"></path><path d="M13 17c0-1.886 0-2.828.586-3.414S15.114 13 17 13h1c1.886 0 2.828 0 3.414.586S22 15.114 22 17s0 2.828-.586 3.414S19.886 21 18 21h-1c-1.886 0-2.828 0-3.414-.586S13 18.886 13 17Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M11.5 11.5v-3m0 3h-3m3 0l-4-4"></path></g></svg></span>
-							</label>
 						</div>
 					</div>
 					<div class="position-section unison-modal-row--dependent">
@@ -660,84 +591,6 @@
 				</div>
 				<div class="modal-footer">
 					<button id="dock-settings-reset" class="modal-btn modal-btn-secondary">__MSG_options_reset__</button>
-				</div>
-			</div>
-		</div>
-
-		<div id="pip-modal-overlay" class="modal-overlay">
-			<div class="modal">
-				<div class="modal-header">
-					<h3 class="modal-title">__MSG_options_display_pipWindow__</h3>
-					<button id="pip-modal-close" class="modal-close-btn" aria-label="Close">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-							<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"></path>
-						</svg>
-					</button>
-				</div>
-				<div class="modal-body" id="pip-modal-body">
-					<div class="container">
-						<span>__MSG_options_display_pipEnabled__</span>
-						<label>
-							<input type="checkbox" id="isPictureInPictureEnabled">
-							<span class="checkmark"></span>
-						</label>
-					</div>
-					<div class="container pip-modal-row--dependent">
-						<div class="setting-row__text">
-							<div class="setting-row__title-line">
-								<span>__MSG_options_display_pipAutoRestore__</span>
-								<span class="setting-help" tabindex="0" data-tooltip="__MSG_options_display_pipAutoRestoreTooltip__" aria-label="__MSG_options_display_pipAutoRestoreTooltip__">?</span>
-							</div>
-						</div>
-						<label>
-							<input type="checkbox" id="isPictureInPictureAutoRestoreEnabled">
-							<span class="checkmark"></span>
-						</label>
-					</div>
-					<div class="container pip-modal-row--dependent">
-						<span>__MSG_options_display_pipWindowLayout__</span>
-						<div class="select">
-							<select id="pipWindowLayout">
-								<option value="horizontal">__MSG_options_pipWindowLayout_horizontal__</option>
-								<option value="vertical">__MSG_options_pipWindowLayout_vertical__</option>
-							</select>
-						</div>
-					</div>
-					<div class="container pip-modal-row--dependent">
-						<span>__MSG_options_display_pipArtworkTransition__</span>
-						<div class="select">
-							<select id="pipArtworkTransition">
-								<option value="shuffle">__MSG_options_pipTransition_shuffle__</option>
-								<option value="flip">__MSG_options_pipTransition_flip__</option>
-								<option value="push">__MSG_options_pipTransition_push__</option>
-								<option value="crossfade">__MSG_options_pipTransition_crossfade__</option>
-							</select>
-						</div>
-					</div>
-					<div class="container pip-modal-row--dependent">
-						<span>__MSG_options_display_pipTextTransition__</span>
-						<div class="select">
-							<select id="pipTextTransition">
-								<option value="spring">__MSG_options_pipTransition_spring__</option>
-								<option value="push">__MSG_options_pipTransition_push__</option>
-								<option value="crossfade">__MSG_options_pipTransition_crossfade__</option>
-							</select>
-						</div>
-					</div>
-					<div class="container pip-modal-row--dependent">
-						<span>__MSG_options_display_pipMarquee__</span>
-						<label>
-							<input type="checkbox" id="pipMarqueeEnabled">
-							<span class="checkmark"></span>
-						</label>
-					</div>
-					<div class="container pip-modal-row--dependent">
-						<span>__MSG_options_display_pipProgressBar__</span>
-						<label>
-							<input type="checkbox" id="pipProgressBarEnabled">
-							<span class="checkmark"></span>
-						</label>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -814,68 +667,6 @@
 				</div>
 				<div class="modal-footer">
 					<button id="offset-modal-reset" class="modal-btn modal-btn-secondary">__MSG_options_reset__</button>
-				</div>
-			</div>
-		</div>
-
-		<div id="import-identity-modal-overlay" class="modal-overlay">
-			<div class="modal import-identity-modal">
-				<div class="modal-header">
-					<h3 class="modal-title">__MSG_options_identityImport_title__</h3>
-					<button id="import-identity-modal-close" class="modal-close-btn" aria-label="Close">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-							<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"></path>
-						</svg>
-					</button>
-				</div>
-				<div class="modal-body">
-					<button id="import-identity-file-btn" class="modal-btn modal-btn-secondary import-identity-file-btn">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-							<path fill-rule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Zm-9 13.5a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd"></path>
-						</svg>
-						<span>__MSG_options_identityImport_chooseFile__</span>
-					</button>
-					<div class="modal-divider">
-						<span>__MSG_options_identityImport_or__</span>
-					</div>
-					<textarea id="import-identity-textarea" class="modal-textarea" rows="6" spellcheck="false" placeholder="__MSG_options_identityImport_pastePlaceholder__"></textarea>
-				</div>
-				<div class="modal-footer">
-					<button id="import-identity-cancel" class="modal-btn modal-btn-secondary">
-						__MSG_options_modal_cancel__
-					</button>
-					<button id="import-identity-confirm" class="modal-btn modal-btn-primary">
-						__MSG_options_identityImport_import__
-					</button>
-				</div>
-			</div>
-		</div>
-
-		<div id="nickname-modal-overlay" class="modal-overlay">
-			<div class="modal nickname-modal">
-				<div class="modal-header">
-					<h3 class="modal-title">__MSG_options_nickname_modalTitle__</h3>
-					<button id="nickname-modal-close" class="modal-close-btn" aria-label="Close">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-							<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"></path>
-						</svg>
-					</button>
-				</div>
-				<div class="modal-body">
-					<p class="modal-message">__MSG_options_nickname_description__</p>
-					<input type="text" id="nickname-modal-input" class="modal-input" maxlength="20" autocomplete="off" spellcheck="false" placeholder="__MSG_options_nickname_placeholder__">
-					<p id="nickname-modal-status" role="status"></p>
-				</div>
-				<div class="modal-footer">
-					<button id="nickname-modal-reset" class="modal-btn modal-btn-secondary">
-						__MSG_options_nickname_reset__
-					</button>
-					<button id="nickname-modal-cancel" class="modal-btn modal-btn-secondary">
-						__MSG_options_modal_cancel__
-					</button>
-					<button id="nickname-modal-save" class="modal-btn modal-btn-primary">
-						__MSG_options_nickname_save__
-					</button>
 				</div>
 			</div>
 		</div>

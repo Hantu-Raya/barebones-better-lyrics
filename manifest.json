@@ -1,36 +1,23 @@
 {
   "manifest_version": 3,
-  "version": "2.4.1",
+  "version": "2.4.1.1",
   "default_locale": "en",
-  "name": "Better Lyrics (Lyrics for YouTube Music)",
+  "name": "Barebones Better Lyrics",
   "description": "__MSG_extensionDescription__",
-  "homepage_url": "https://betterlyrics.org",
+  "homepage_url": "https://github.com/Hantu-Raya/barebones-better-lyrics",
   "icons": {
     "16": "images/icons/icon-16.png",
     "48": "images/icons/icon-48.png",
     "512": "images/icons/icon-512.png"
   },
-  "chrome:key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4RTGjLjI1KqxGLgE7d3tD4O+mTA6pKDPZ29V4/uP9nBicHRst7R7n5wdFW1qvLiILyUqRm1fURMBeShb0mcPEMC6iW3cr4i8NG+52VxFcPIYbsegPHJsQFVWe6lgorVw20yn2mWshGKIppgN14FJCSFc7mS/CX4JL88E82AIaFJiVBgmpBu5RMcglUfSwMH5ePlRV68dOhMjX8bdoHH6FoAARh7igtyKBKEzA811PWRIBiKZBGAZc2ew6+5O2mERuFq0PRvfEcD4KsBRiWHltyUcYzVjIMF4soC8i6lNOJx8it0kAn5PN6G7TdiD3HbU5eLqk+iCr+cK/pS1ybiACQIDAQAB",
-  "chromium:key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4RTGjLjI1KqxGLgE7d3tD4O+mTA6pKDPZ29V4/uP9nBicHRst7R7n5wdFW1qvLiILyUqRm1fURMBeShb0mcPEMC6iW3cr4i8NG+52VxFcPIYbsegPHJsQFVWe6lgorVw20yn2mWshGKIppgN14FJCSFc7mS/CX4JL88E82AIaFJiVBgmpBu5RMcglUfSwMH5ePlRV68dOhMjX8bdoHH6FoAARh7igtyKBKEzA811PWRIBiKZBGAZc2ew6+5O2mERuFq0PRvfEcD4KsBRiWHltyUcYzVjIMF4soC8i6lNOJx8it0kAn5PN6G7TdiD3HbU5eLqk+iCr+cK/pS1ybiACQIDAQAB",
-  "chromium-based:key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4RTGjLjI1KqxGLgE7d3tD4O+mTA6pKDPZ29V4/uP9nBicHRst7R7n5wdFW1qvLiILyUqRm1fURMBeShb0mcPEMC6iW3cr4i8NG+52VxFcPIYbsegPHJsQFVWe6lgorVw20yn2mWshGKIppgN14FJCSFc7mS/CX4JL88E82AIaFJiVBgmpBu5RMcglUfSwMH5ePlRV68dOhMjX8bdoHH6FoAARh7igtyKBKEzA811PWRIBiKZBGAZc2ew6+5O2mERuFq0PRvfEcD4KsBRiWHltyUcYzVjIMF4soC8i6lNOJx8it0kAn5PN6G7TdiD3HbU5eLqk+iCr+cK/pS1ybiACQIDAQAB",
+  "chromium:key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuiGoKo5xfzATO7WIOf5IdzCFuPMLI/W9dl4qsrBNzYpnrsY3/mC7SG6WgNB5Bz04WxWAR2SVaSbBTGN9aCXukzgSPk2/ZyTpZ88jJdWJa1SSbFO5jJomiGQL8EAQVzP9HMEwsZp1Z2tkrr81rG3gcPicz+9qMgJeStt/Sute3k2gpY/NqHrzrUOP3n8BZq7WkbFp1ADRG1qu2Bp3DQxLc9aikj7fFBJBWtrkAScSB8kKcLh2WIyfDC5ZvXJ0aLIyp1LNpi7Jgqjgt48WwRJpRofaG36sTnCE+p6d7U6MWxqOa2Dz/rHLHTVrknNMv0QhJmO00tY2FBLd4T2AAmRIuQIDAQAB",
   "host_permissions": [
-    "*://music.youtube.com/*"
+    "https://music.youtube.com/*"
   ],
   "permissions": [
     "storage",
     "alarms"
   ],
-  "externally_connectable": {
-    "matches": [
-      "https://unison.betterlyrics.org/*",
-      "https://unison.boidu.dev/*",
-      "https://blrcunison.vercel.app/*"
-    ]
-  },
-  "optional_permissions": [
-    "downloads"
-  ],
-  "optional_host_permissions": [],
   "content_security_policy": {
     "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://cdn.fontshare.com https://fonts.gstatic.com; img-src 'self' data: https://blrcunison.vercel.app https://boidu.dev https://betterlyrics.org https://raw.githubusercontent.com https://placehold.co; connect-src https://unison.betterlyrics.org https://unison.boidu.dev https://raw.githubusercontent.com https://api.github.com https://themes.betterlyrics.org; frame-src https://themes.betterlyrics.org;"
   },
@@ -41,7 +28,7 @@
   "web_accessible_resources": [
     {
       "matches": [
-        "*://music.youtube.com/*"
+        "https://music.youtube.com/*"
       ],
       "resources": [
         "_locales/*/messages.json",
@@ -53,18 +40,7 @@
         "images/icons/shaders.png",
         "*.js.map",
         "pages/standalone-editor.html",
-        "pages/marketplace.html",
-        "pages/unison.html"
-      ]
-    },
-    {
-      "matches": [
-        "https://unison.betterlyrics.org/*",
-        "https://unison.boidu.dev/*",
-        "https://blrcunison.vercel.app/*"
-      ],
-      "resources": [
-        "pages/auth.html"
+        "pages/marketplace.html"
       ]
     }
   ],
@@ -72,24 +48,10 @@
     "service_worker": "src/options/background.ts",
     "type": "module"
   },
-  "gecko:background": {
-    "scripts": [
-      "src/options/background.ts"
-    ]
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "betterlyrics@boidu.dev",
-      "strict_min_version": "128.0"
-    },
-    "gecko_android": {}
-  },
-  "chrome:update_url": "https://clients2.google.com/service/update2/crx",
-  "edge:key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmNspBNCi4WHoRlH/rRPneLNqtWHzsEsK+Z4a7qmose6afikym7/5A/7I/OuXeJFqJXLc7YfWVUtdBWfHRSjT9Earq0wdOfElHyWnHQ1/cn55xbCdMJRSsVKEg3NRHWKbwpBFlt6XUog5sl48Gf+v6aZrv069MWEnXA13BEWqRX9hALG6WswyxaZXKokwH2AvnDDaWHrBghti6kmSNuXWCJj4c02YwZ5LgOJ3m5cI7bq/Mi7RtVuK+Odsj2/iESXAwNvLcMiOTW8vrioj/KfySjXpi16HCZIm0e6EvTq08CQUvIEpxV7Gaiq5w2j2TFKPMQ4aaHTiEgWMSZ0DeihLNQIDAQAB",
   "content_scripts": [
     {
       "matches": [
-        "*://music.youtube.com/*"
+        "https://music.youtube.com/*"
       ],
       "js": [
         "src/index.ts"
@@ -99,7 +61,7 @@
     },
     {
       "matches": [
-        "*://music.youtube.com/*"
+        "https://music.youtube.com/*"
       ],
       "js": [
         "public/earlyInject.js"
@@ -109,27 +71,14 @@
     },
     {
       "matches": [
-        "*://music.youtube.com/*"
+        "https://music.youtube.com/*"
       ],
       "js": [
         "public/script.js"
       ],
       "run_at": "document_end",
       "world": "MAIN"
-    },
-    {
-      "matches": [
-        "*://music.youtube.com/*"
-      ],
-      "js": [
-        "src/pageWorld.ts"
-      ],
-      "run_at": "document_end",
-      "world": "MAIN"
     }
   ],
-  "action": {
-    "default_popup": "src/options/options.html"
-  },
-  "version_name": "2.4.1"
+  "version_name": "2.4.1+nativune.1"
 }

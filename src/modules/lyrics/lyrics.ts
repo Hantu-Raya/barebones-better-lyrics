@@ -9,7 +9,6 @@ import { t } from "@core/i18n";
 import { type LineData, type LyricsData, processLyrics } from "@modules/lyrics/injectLyrics";
 import { stringSimilarity } from "@modules/lyrics/lyricParseUtils";
 import { flushLoader, refreshDockSources, renderLoader } from "@modules/ui/dom";
-import { publishPictureInPictureLyrics } from "@modules/ui/pictureInPicture/lyricsPublisher";
 import type { Lyric, LyricSourceResult, ProviderParameters, SourceMapType } from "./providers/shared";
 import { getLyrics, newSourceMap, providerPriority } from "./providers/shared";
 import { awaitUnifiedStream } from "./providers/unified";
@@ -75,7 +74,6 @@ function retainParsedLyrics(data: LyricSourceResultWithMeta): void {
     musicVideoSynced: data.musicVideoSynced,
     segmentMap: data.segmentMap,
   };
-  publishPictureInPictureLyrics();
 }
 
 /**
@@ -201,15 +199,12 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       applySegmentMapToLyrics(AppState.lyricData, mainView.lines, segmentMap);
       AppState.suppressZeroTime = Date.now() + 5000;
       AppState.areLyricsTicking = true; // Keep lyrics ticking while new lyrics are fetched.
-      // The window keeps showing these lines through the refetch, so it needs the same deadline.
-      publishPictureInPictureLyrics();
       logCore("Switching between audio/video: Skipping Loader", segmentMap);
     } else if (isSoftReload) {
       // Same-song reload (provider switch or translation/romanization toggle): keep the
       // current lyrics on screen and swap them in once the new ones are ready, no loader.
       AppState.suppressZeroTime = Date.now() + 5000;
       AppState.areLyricsTicking = true;
-      publishPictureInPictureLyrics();
       logCore("Soft reload: keeping current lyrics, skipping loader");
     } else {
       logCore("Not Switching between audio/video", isAVSwitch, segmentMap);
@@ -236,7 +231,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
     }
 
     const tabSelector = document.getElementsByClassName(TAB_HEADER_CLASS)[1];
-    if (tabSelector?.getAttribute("aria-selected") !== "true" && !AppState.isPictureInPictureOpen) {
+    if (tabSelector?.getAttribute("aria-selected") !== "true") {
       AppState.areLyricsLoaded = false;
       AppState.areLyricsTicking = false;
       AppState.lyricInjectionFailed = true;

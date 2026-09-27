@@ -14,7 +14,6 @@ import { getArtworkMetadata, getSongAlbum, getSongMetadata } from "@modules/lyri
 import { onAutoSwitchEnabled, onFullScreenDisabled, wakeDockIdle } from "@modules/settings/settings";
 import { adjustLyricOffset, OFFSET_STEP, OFFSET_STEP_LARGE } from "@modules/ui/lyricsDock/offset";
 import { currentTickOptions, mainView } from "@modules/ui/mainLyricsView";
-import { preloadArtwork } from "@modules/ui/pictureInPicture/lyricsView";
 import { revealQueueAutoplaySection } from "@modules/ui/queueAutoplay";
 import {
   closePlayerPageIfOpenedForFullscreen,
@@ -371,10 +370,7 @@ export function initializeLyrics(): void {
       });
     }
 
-    // Ticking is the side panel's business, but this warms the next song's artwork and lyrics for
-    // whichever view is on screen, and the floating window is a view the side panel cannot see.
-    const isAnyViewShowingLyrics = AppState.areLyricsTicking || AppState.isPictureInPictureOpen;
-    if (isAnyViewShowingLyrics && AppState.areLyricsLoaded && !AppState.hasPreloadedNextSong) {
+    if (AppState.areLyricsTicking && AppState.areLyricsLoaded && !AppState.hasPreloadedNextSong) {
       AppState.hasPreloadedNextSong = true;
       logCore("Trying to preload next song");
       getSongMetadata(AppState.lastVideoId).then(async data => {
@@ -389,9 +385,6 @@ export function initializeLyrics(): void {
 
           if (next) {
             preloadHighResThumbnail(next.smallThumbnail);
-            // The floating window asks for a square crop, which is a different
-            // cache entry from the one above, so it needs warming separately.
-            if (AppState.isPictureInPictureOpen && next.thumbnail?.url) preloadArtwork(next.thumbnail.url);
             await preFetchLyrics(
               {
                 song: next.title,
@@ -416,7 +409,7 @@ export function initializeLyrics(): void {
       });
     }
 
-    if (AppState.lyricInjectionFailed && !AppState.isPictureInPictureOpen) {
+    if (AppState.lyricInjectionFailed) {
       const tabSelector = document.getElementsByClassName(TAB_HEADER_CLASS)[1];
       if (tabSelector && tabSelector.getAttribute("aria-selected") !== "true") {
         return; // wait to resolve until tab is visible
@@ -440,10 +433,8 @@ export function initializeLyrics(): void {
     }
 
     // The only path that ticks while playback is paused, so it is what lands a pause on the running
-    // word animations. The floating window term is not about the window: an opener that owns one
-    // reports "hidden" for as long as it is open, however visible it actually is, so without it the
-    // side panel would keep sweeping the current line after the user hits pause.
-    if (document.visibilityState === "visible" || AppState.isPictureInPictureOpen) {
+    // word animations.
+    if (document.visibilityState === "visible") {
       runAnimationEngine(performance.now(), true);
     }
   });

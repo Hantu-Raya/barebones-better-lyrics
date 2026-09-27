@@ -11,7 +11,6 @@
 
 import { buildStoreThemeContent, saveCustomCss } from "@core/customCss";
 import { getAppliedStoreThemeId, getLocalStorage, getSyncStorage } from "@core/storage";
-import { initBackgroundAuth } from "@modules/auth/backgroundAuth";
 import {
   getInstalledStoreThemes,
   getInstalledTheme,
@@ -162,5 +161,3 @@ chrome.runtime.onMessage.addListener(request => {
   }
   return true;
 });
-
-initBackgroundAuth();

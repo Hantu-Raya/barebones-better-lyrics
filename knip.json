@@ -2,13 +2,10 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "src/index.ts",
-    "src/pageWorld.ts",
     "src/options/background.ts",
     "src/options/options.ts",
     "src/options/editor.ts",
     "src/options/marketplace.ts",
-    "src/options/unison/unison.ts",
-    "src/options/auth/auth.ts",
     "public/earlyInject.js",
     "public/script.js",
     "src/core/generated/locales.ts",

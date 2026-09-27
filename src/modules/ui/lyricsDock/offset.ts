@@ -2,18 +2,14 @@ import { OFFSET_STORAGE_PREFIX } from "@constants";
 import { AppState } from "@core/appState";
 import { getTransientStorage, setPersistentStorage, setStorage } from "@core/storage";
 import { retickMainView } from "@modules/ui/mainLyricsView";
-import { publishPictureInPictureLyrics } from "@modules/ui/pictureInPicture/lyricsPublisher";
 
 export const OFFSET_STEP = 0.1;
 export const OFFSET_STEP_LARGE = 0.5;
 
 const OFFSET_PERSIST_DELAY = 400;
 
-// Every offset change moves the lyrics in both views, so each one re-renders the side panel and
-// hands the floating window the offsets its own tick reads.
 function renderOffsetChange(): void {
   retickMainView();
-  publishPictureInPictureLyrics();
 }
 
 function offsetKey(videoId: string, source: string): string {

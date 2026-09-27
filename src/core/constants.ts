@@ -23,10 +23,7 @@ export const DOCK_CONTROL_ORDER_DEFAULT = [
   "romanize",
   "offset",
   "refresh",
-  "pictureInPicture",
 ] as const;
-export const MODAL_OVERLAY_CLASS = "blyrics-modal-overlay" as const;
-export const MODAL_CLASS = "blyrics-modal" as const;
 
 // DOM Selectors
 export const TAB_RENDERER_SELECTOR = "#tab-renderer" as const;
@@ -36,7 +33,6 @@ export const NO_LYRICS_TEXT_SELECTOR =
 export const FULLSCREEN_BUTTON_SELECTOR = ".fullscreen-button" as const;
 export const SHADERS_DETECTION_SELECTOR = '[id^="better-lyrics-kawarp-"]' as const;
 export const MINI_PLAYER_BUTTON_SELECTOR = ".player-minimize-button" as const;
-export const PICTURE_IN_PICTURE_TOGGLE_SELECTOR = "[data-blyrics-picture-in-picture-toggle]" as const;
 
 // DOM IDs and Attributes
 export const LYRICS_LOADER_ID = "blyrics-loader" as const;
@@ -44,7 +40,6 @@ export const LYRICS_DISABLED_ATTR = "blyrics-dfs" as const;
 export const FULLSCREEN_CONTROLS_DISABLED_ATTR = "blyrics-no-fs-controls" as const;
 export const DISABLE_EFFECTS_STYLE_ID = "blyrics-disable-effects" as const;
 export const HIDDEN_CLASS = "blyrics-hidden" as const;
-export const REPORT_MODAL = "blyrics-report-lyrics" as const;
 
 // Custom Events
 // Duplicated as a literal in public/script.js; that file is a page-world script and cannot import.
@@ -139,18 +134,6 @@ export const LOG_PREFIX_UNISON = "[BetterLyrics:Unison]" as const;
 
 export const LOG_PREFIX_AUTH = "[BetterLyrics:Auth]" as const;
 
-export const AUTH_APPROVAL_TTL_MS = 24 * 60 * 60 * 1000;
-
-export const AUTH_MESSAGE_TYPES = {
-  REQUEST: "bl-auth-request",
-} as const;
-
-export const AUTH_PORT_NAME_PREFIX = "bl-auth-popup:" as const;
-
-export const BL_AUTH_SITE_PORT_NAME = "bl-auth-site" as const;
-
-// Auth partner resolution lives in @modules/auth/partners: it needs chrome.runtime, and this module
-// is imported by page-world code that has none.
 
 // Initialization and General Logs
 export const INITIALIZE_LOG =

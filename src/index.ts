@@ -35,12 +35,6 @@ import {
   setupHomepageFullscreenHandler,
   setupWakeLockForFullscreen,
 } from "@modules/ui/observer";
-import {
-  disposePictureInPictureBrowserController,
-  initializePictureInPictureAutoRestore,
-  mirrorNativeMiniPlayerButton,
-  publishPictureInPictureResources,
-} from "@modules/ui/pictureInPicture/browserController";
 import { subscribeToCustomStyles } from "@modules/ui/styleInjector";
 import { applyLoggingSetting } from "@modules/settings/settings";
 import { logCore } from "@core/logger";
@@ -57,8 +51,7 @@ async function modify(isDisposed: () => boolean): Promise<void> {
   await loadLocaleOverride();
   if (isDisposed()) return;
   injectI18nCssVars();
-  subscribeToLocaleChanges(publishPictureInPictureResources);
-  publishPictureInPictureResources();
+  subscribeToLocaleChanges();
   setupAdObserver();
   enableLyricsTab();
   observeLyricsPageType();
@@ -112,8 +105,6 @@ function init(): () => void {
     void modify(() => disposed);
   };
 
-  initializePictureInPictureAutoRestore();
-  mirrorNativeMiniPlayerButton();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", runModify, { once: true });
   } else {
@@ -125,7 +116,6 @@ function init(): () => void {
     disposed = true;
     document.removeEventListener("DOMContentLoaded", runModify);
     cleanupRequestSniffer();
-    disposePictureInPictureBrowserController();
     if (document.querySelector('[data-extension-root="true"]')) cleanupLyrics();
     unmountDock();
   };

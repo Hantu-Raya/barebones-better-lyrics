@@ -29,7 +29,6 @@ import {
 } from "@modules/ui/dom";
 import { lyricsElementAdded, mainView } from "@modules/ui/mainLyricsView";
 import { disableNativeLyricsFocus } from "@modules/ui/nativeLyricsFocus";
-import { publishPictureInPictureLyrics } from "@modules/ui/pictureInPicture/lyricsPublisher";
 import { injectRomanization, injectTranslation, type LineData } from "@braccato/core";
 import { containsNonLatin, detectNonLatinLanguage } from "@braccato/core/text";
 import { langCodesMatch, languageMatchesAny } from "@utils";
@@ -62,7 +61,6 @@ function recordLyricDecoration(index: number, decoration: LyricLineDecoration): 
 function updateLyricLanguage(language: string): void {
   if (AppState.lyricData) AppState.lyricData.language = language;
   mainView.setLanguage(language);
-  publishPictureInPictureLyrics();
 }
 
 function isRomanizationDisabledForLang(lang: string): boolean {
@@ -193,7 +191,6 @@ function injectLyrics(
   AppState.lyricData = lyricsData;
 
   if (!noLyrics) {
-    const unisonData = data.source === "Unison" && "unisonData" in data ? data.unisonData : undefined;
     addFooter(
       data.source,
       data.sourceHref,
@@ -202,12 +199,10 @@ function injectLyrics(
       data.album,
       data.duration,
       data.providerKey,
-      data.videoId,
-      unisonData,
-      syncType === "none"
+      data.videoId
     );
   } else {
-    addNoLyricsButton(data.song, data.artist, data.album, data.duration, data.videoId);
+    addNoLyricsButton(data.song, data.artist);
   }
 
   void processBatchTranslationsAndRomanizations(doc, data, lines, isStale, signal);
@@ -360,7 +355,6 @@ async function processBatchTranslationsAndRomanizations(
           }
         });
         lyricsElementAdded();
-        publishPictureInPictureLyrics();
       })()
     );
   }
@@ -396,7 +390,6 @@ async function processBatchTranslationsAndRomanizations(
           }
         });
         lyricsElementAdded();
-        publishPictureInPictureLyrics();
       })()
     );
   }

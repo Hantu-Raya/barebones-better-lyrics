@@ -10,11 +10,10 @@ import { AppState, reloadLyrics } from "@core/appState";
 import { clearCache, compileRicsToStyles, getStorage } from "@core/storage";
 import { configureLogging, logContent } from "@core/logger";
 import { clearCache as clearTranslationCache } from "@modules/lyrics/translation";
-import { mountDock, mountVotingSegment, reloadAlbumArt, unmountDock, updateDockPosition } from "@modules/ui/dom";
+import { mountDock, reloadAlbumArt, unmountDock, updateDockPosition } from "@modules/ui/dom";
 import { applyGlobalOffsets } from "@modules/ui/lyricsDock/offset";
 import { mainView } from "@modules/ui/mainLyricsView";
 import { isPlayerFullscreened, onFullscreenChange } from "@modules/ui/observer";
-import { publishPictureInPictureLyrics } from "@modules/ui/pictureInPicture/lyricsPublisher";
 import { applyCustomStyles, getAndApplyCustomStyles } from "@modules/ui/styleInjector";
 
 let hasInitializedMessageListener = false;
@@ -286,9 +285,6 @@ export function listenForPopupMessages(): void {
 export function loadPassiveScrollSetting(): void {
   getStorage({ isPassiveScrollEnabled: true }, items => {
     AppState.isPassiveScrollEnabled = items.isPassiveScrollEnabled;
-    // The side panel reads this off AppState every tick. The floating window only sees the copy
-    // that rode over on the last payload, so a change reaches it on a republish or not at all.
-    publishPictureInPictureLyrics();
   });
 }
 
@@ -318,7 +314,6 @@ export function loadDockSettings(callback?: () => void): void {
       "isDockRomanizeEnabled",
       "isDockOffsetEnabled",
       "isDockRefreshEnabled",
-      "isDockPictureInPictureEnabled",
       "dockControlsOrder",
     ],
     items => {
@@ -332,7 +327,6 @@ export function loadDockSettings(callback?: () => void): void {
       AppState.isDockRomanizeEnabled = items.isDockRomanizeEnabled ?? true;
       AppState.isDockOffsetEnabled = items.isDockOffsetEnabled ?? true;
       AppState.isDockRefreshEnabled = items.isDockRefreshEnabled ?? false;
-      AppState.isDockPictureInPictureEnabled = items.isDockPictureInPictureEnabled ?? true;
       AppState.dockControlsOrder = normalizeDockControlsOrder(items.dockControlsOrder);
       callback?.();
     }
@@ -346,9 +340,6 @@ function syncDock(): void {
   }
   mountDock(AppState.controlsDockPosition);
   updateDockPosition(AppState.controlsDockPosition);
-  if (AppState.currentUnisonData) {
-    mountVotingSegment(AppState.currentUnisonData);
-  }
 }
 
 const DOCK_IDLE_HIDDEN_CLASS = `${DOCK_CLASS}--idle-hidden`;

@@ -8,7 +8,6 @@ import {
   loadChunkedStyles,
 } from "@core/storage";
 import { mainView } from "./mainLyricsView";
-import { publishPictureInPictureLyrics } from "./pictureInPicture/lyricsPublisher";
 import { logCore, logError } from "@core/logger";
 import { migrateLetterWavePref, type LetterWavePref } from "@modules/settings/letterWave";
 
@@ -37,7 +36,6 @@ function withLetterWaveSetting(css: string): string {
  */
 export function applyCustomStyles(css: string): void {
   const needsLyricReload = mainView.setTheme(withLetterWaveSetting(css));
-  publishPictureInPictureLyrics();
 
   if (needsLyricReload) {
     reloadLyrics();

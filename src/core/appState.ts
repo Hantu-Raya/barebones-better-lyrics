@@ -3,7 +3,6 @@ import type { LyricDecorations, LyricsData } from "@modules/lyrics/injectLyrics"
 import { createLyrics, type ParsedLyrics } from "@modules/lyrics/lyrics";
 import type { LyricSourceKey } from "@modules/lyrics/providers/shared";
 import { resetUnifiedStream } from "@modules/lyrics/providers/unified";
-import type { UnisonData } from "@modules/lyrics/providers/unison";
 import { flushLoader } from "@modules/ui/dom";
 import { clearSongCache } from "@core/storage";
 import { logError } from "@core/logger";
@@ -65,10 +64,7 @@ interface AppStateType {
   isDockRomanizeEnabled: boolean;
   isDockOffsetEnabled: boolean;
   isDockRefreshEnabled: boolean;
-  isDockPictureInPictureEnabled: boolean;
   dockControlsOrder: string[];
-  currentUnisonData: UnisonData | null;
-  isPictureInPictureOpen: boolean;
   endTimeMode: "total" | "remaining";
 }
 
@@ -112,10 +108,7 @@ export const AppState: AppStateType = {
   isDockRomanizeEnabled: true,
   isDockOffsetEnabled: true,
   isDockRefreshEnabled: false,
-  isDockPictureInPictureEnabled: true,
   dockControlsOrder: [...DOCK_CONTROL_ORDER_DEFAULT],
-  currentUnisonData: null,
-  isPictureInPictureOpen: false,
   endTimeMode: "total",
 };
 

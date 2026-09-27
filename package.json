@@ -11,6 +11,7 @@
         "start": "npm run generate:locales && extension start --browser chrome --profile dist/extension-js/profiles/chrome-profile/dev",
         "start:brave": "npm run generate:locales && extension start --chromium-binary \"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser\" --profile dist/extension-js/profiles/chromium-profile/dev",
         "build": "npm run generate:locales && extension build --browser all",
+        "build:nativune": "npm run generate:locales && tsc --noEmit && extension build --browser chrome",
         "build:ci": "npm run generate:locales && tsx tooling/build-and-patch.ts",
         "build:zip": "npm run generate:locales && extension build --browser all --zip",
         "build:release": "npm run generate:locales && tsx tooling/build-release-zip.ts",
