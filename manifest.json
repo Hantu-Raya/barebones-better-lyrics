@@ -30,8 +30,7 @@
       ],
       "resources": [
         "_locales/*/messages.json",
-        "css/blyrics/*.css",
-        "css/ytmusic/*.css"
+        "css/blyrics/*.css"
       ]
     }
   ],

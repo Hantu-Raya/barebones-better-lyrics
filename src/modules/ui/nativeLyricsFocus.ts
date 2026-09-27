@@ -6,12 +6,20 @@ const NATIVE_LYRICS_HEADER_SELECTOR =
 
 let observer: MutationObserver | null = null;
 let applyScheduled = false;
+let active = false;
+
+// YouTube's own lyrics shelf is taken out of focus and the accessibility tree only while the fork's
+// lyrics replace it; each change is recorded so restoreNativeLyricsFocus() can put it back.
+const hiddenShelves = new Set<HTMLElement>();
+const strippedTabIndex = new Map<HTMLElement, string>();
 
 function applyNativeLyricsFocusDisabled(): void {
   applyScheduled = false;
+  if (!active) return;
 
   const shelves = document.querySelectorAll<HTMLElement>(NATIVE_LYRICS_SHELF_SELECTOR);
   for (const shelf of shelves) {
+    hiddenShelves.add(shelf);
     if (!shelf.hasAttribute("inert")) {
       shelf.setAttribute("inert", "");
     }
@@ -23,6 +31,7 @@ function applyNativeLyricsFocusDisabled(): void {
   const headers = document.querySelectorAll<HTMLElement>(NATIVE_LYRICS_HEADER_SELECTOR);
   for (const header of headers) {
     if (header.hasAttribute("tabindex")) {
+      strippedTabIndex.set(header, header.getAttribute("tabindex")!);
       header.removeAttribute("tabindex");
     }
   }
@@ -55,6 +64,7 @@ function handleMutations(mutations: MutationRecord[]): void {
 }
 
 export function disableNativeLyricsFocus(): void {
+  active = true;
   applyNativeLyricsFocusDisabled();
 
   if (observer) {
@@ -73,4 +83,25 @@ export function disableNativeLyricsFocus(): void {
     childList: true,
     subtree: true,
   });
+}
+
+/**
+ * Undoes disableNativeLyricsFocus(): called whenever the fork's lyrics leave the tab.
+ */
+export function restoreNativeLyricsFocus(): void {
+  active = false;
+  observer?.disconnect();
+  observer = null;
+  applyScheduled = false;
+
+  for (const shelf of hiddenShelves) {
+    shelf.removeAttribute("inert");
+    shelf.removeAttribute("aria-hidden");
+  }
+  hiddenShelves.clear();
+
+  for (const [header, tabIndex] of strippedTabIndex) {
+    if (!header.hasAttribute("tabindex")) header.setAttribute("tabindex", tabIndex);
+  }
+  strippedTabIndex.clear();
 }

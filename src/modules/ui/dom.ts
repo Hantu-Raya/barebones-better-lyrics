@@ -12,7 +12,6 @@ import {
   LYRICS_PAGE_TYPE,
   LYRICS_WRAPPER_CREATED_LOG,
   LYRICS_WRAPPER_ID,
-  NO_LYRICS_TEXT_SELECTOR,
   PLAYER_BAR_SELECTOR,
   PROVIDER_CONFIGS,
   type SyncType,
@@ -31,6 +30,7 @@ import { parseSvgString, syncTypeColors, syncTypeIcons } from "./lyricsDock/icon
 import { loadSavedOffset } from "./lyricsDock/offset";
 import { scrollEventHandler } from "./observer";
 import { logCore } from "@core/logger";
+import { restoreNativeLyricsFocus } from "./nativeLyricsFocus";
 
 const providerDisplayInfo: Record<string, { name: string; syncType: SyncType }> = Object.fromEntries(
   PROVIDER_CONFIGS.map(p => [p.key, { name: p.displayName, syncType: p.syncType }])
@@ -715,7 +715,7 @@ export function showNoLyricsState(): void {
  * Injects the extension stylesheets (local files only).
  */
 export async function injectHeadTags(): Promise<void> {
-  const cssFiles = ["css/ytmusic/index.css", "css/blyrics/index.css"];
+  const cssFiles = ["css/blyrics/index.css"];
 
   for (const file of cssFiles) {
     const id = `blyrics-style-${file.replace(/(\/index)?\.css$/, "")}`;
@@ -747,10 +747,7 @@ export function cleanup(): void {
   AppState.parsedLyrics = null;
   AppState.lyricDecorations = {};
 
-  const ytMusicLyrics = (document.querySelector(NO_LYRICS_TEXT_SELECTOR) as HTMLElement)?.parentElement;
-  if (ytMusicLyrics) {
-    ytMusicLyrics.style.display = "";
-  }
+  restoreNativeLyricsFocus();
 
   const blyricsFooter = document.getElementsByClassName(FOOTER_CLASS)[0];
 

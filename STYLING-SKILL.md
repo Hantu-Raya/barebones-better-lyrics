@@ -415,7 +415,7 @@ Animates `transform`, `opacity`, `filter: blur(8px)` over 320ms.
 
 ```css
 /* dock shifts down 72px when autoscroll resume button is visible */
-#side-panel:has(.autoscroll-resume-button:not([autoscroll-hidden="true"])) .blyrics-unison-dock[data-position="top-center"] {
+#side-panel:has(.blyrics-autoscroll-resume-button:not([autoscroll-hidden="true"])) .blyrics-unison-dock[data-position="top-center"] {
   --dock-y-shift: 72px;
 }
 

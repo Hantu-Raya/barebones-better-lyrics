@@ -26,8 +26,6 @@ export const DOCK_CONTROL_ORDER_DEFAULT = [
 // DOM Selectors
 export const TAB_RENDERER_SELECTOR = "#tab-renderer" as const;
 export const LYRICS_PAGE_TYPE = "MUSIC_PAGE_TYPE_TRACK_LYRICS" as const;
-export const NO_LYRICS_TEXT_SELECTOR =
-  "#tab-renderer > ytmusic-message-renderer > yt-formatted-string.text.style-scope.ytmusic-message-renderer" as const;
 
 // DOM IDs and Attributes
 export const LYRICS_LOADER_ID = "blyrics-loader" as const;

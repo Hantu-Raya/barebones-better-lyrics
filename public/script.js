@@ -30,17 +30,6 @@ export default function initializePlayerBridge() {
   let observedPlayer = null;
   let observedVideoElement = null;
 
-  const updateVideoAspectRatioVar = video => {
-    if (video && video.videoWidth > 0 && video.videoHeight > 0) {
-      document.documentElement.style.setProperty(
-        "--blyrics-video-aspect-ratio",
-        `${video.videoWidth} / ${video.videoHeight}`
-      );
-    } else {
-      document.documentElement.style.removeProperty("--blyrics-video-aspect-ratio");
-    }
-  };
-
   const publishPlayerSnapshot = () => {
     const player = observedPlayer;
     if (!player?.isConnected) return;
@@ -94,7 +83,6 @@ export default function initializePlayerBridge() {
   };
 
   const handleVideoStateChange = () => {
-    updateVideoAspectRatioVar(observedVideoElement);
     publishPlayerSnapshot();
   };
 
@@ -113,16 +101,12 @@ export default function initializePlayerBridge() {
 
     detachVideoListeners();
     observedVideoElement = video;
-    if (!video) {
-      updateVideoAspectRatioVar(null);
-      return;
-    }
+    if (!video) return;
 
     video.addEventListener("resize", handleVideoStateChange);
     for (const event of VIDEO_STATE_EVENTS) {
       video.addEventListener(event, handleVideoStateChange);
     }
-    updateVideoAspectRatioVar(video);
   };
 
   const handlePlayerStateChange = () => publishPlayerSnapshot();
@@ -200,6 +184,5 @@ export default function initializePlayerBridge() {
     stopPlayerBridge();
     window.removeEventListener("unload", stopPlayerBridge);
     document.removeEventListener("blyrics-seek-to", handleSeek);
-    document.documentElement.style.removeProperty("--blyrics-video-aspect-ratio");
   };
 }

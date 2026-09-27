@@ -13,7 +13,6 @@ import {
   enableLyricsTab,
   initializeLyrics,
   lyricReloader,
-  setUpAvButtonListener,
   setupAltHoverHandler,
 } from "@modules/ui/observer";
 
@@ -40,7 +39,6 @@ async function modify(isDisposed: () => boolean): Promise<void> {
   initializeLyrics();
   setupAltHoverHandler();
   initProviders();
-  setUpAvButtonListener();
 }
 
 /**

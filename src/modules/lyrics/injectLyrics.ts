@@ -2,7 +2,6 @@ import {
   LYRICS_FOUND_LOG,
   LYRICS_TAB_NOT_DISABLED_LOG,
   NO_LYRICS_FOUND_LOG,
-  NO_LYRICS_TEXT_SELECTOR,
   SYNC_DISABLED_LOG,
   TAB_HEADER_CLASS,
   TRANSLATION_ENABLED_LOG,
@@ -88,11 +87,6 @@ export function processLyrics(
   }
 
   logCore(LYRICS_FOUND_LOG);
-
-  const ytMusicLyrics = document.querySelector(NO_LYRICS_TEXT_SELECTOR)?.parentElement;
-  if (ytMusicLyrics) {
-    ytMusicLyrics.classList.add("blyrics-hidden");
-  }
 
   // The previous song's container, not the one this injection builds: injectLyrics creates that
   // one later. cleanup() drops both this reference and the element together, so a null here means

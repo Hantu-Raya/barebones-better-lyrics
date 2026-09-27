@@ -110,15 +110,16 @@ export function subscribeToLocaleChanges(onLocaleApplied?: () => void): void {
   });
 }
 
+// Nativune: a fork-owned <style> scoped to the fork's overlay, so YouTube's <html> gets no inline style.
 export function injectI18nCssVars(): void {
-  const vars: Record<string, string> = {
-    "--blyrics-text-ad-playing": t("lyrics_adPlaying"),
-  };
-
-  const root = document.documentElement;
-  for (const [prop, value] of Object.entries(vars)) {
-    root.style.setProperty(prop, `"${value}"`);
+  const text = t("lyrics_adPlaying").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  let style = document.getElementById("blyrics-i18n-vars");
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "blyrics-i18n-vars";
+    (document.head ?? document.documentElement).appendChild(style);
   }
+  style.textContent = `#blyrics-ad-overlay { --blyrics-text-ad-playing: "${text}"; }`;
 }
 
 export function initI18n(): void {

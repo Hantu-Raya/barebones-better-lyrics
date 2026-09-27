@@ -15,7 +15,6 @@ import { cleanup, renderLoader } from "./dom";
 
 // -- Observer Storage & Init Guards --------------------------
 let lyricsTabObserver: MutationObserver | null = null;
-let avButtonObserver: MutationObserver | null = null;
 
 let hasInitializedLyricReloader = false;
 let hasInitializedAltHover = false;
@@ -270,38 +269,4 @@ export function setupAltHoverHandler(): void {
   window.addEventListener("blur", () => {
     updateAltState(false);
   });
-}
-
-export function setUpAvButtonListener(): void {
-  let avToggle = document.querySelector("#av-id > ytmusic-av-toggle");
-  if (!avToggle) {
-    setTimeout(setUpAvButtonListener, 1000);
-    return;
-  }
-
-  if (avButtonObserver) {
-    avButtonObserver.disconnect();
-  }
-
-  let handleAVSwitch = (isVideo: boolean) => {
-    document.querySelector("#player-page")?.toggleAttribute("blyrics-video-mode", isVideo);
-    document.querySelector("ytmusic-app-layout")?.toggleAttribute("blyrics-video-mode", isVideo);
-  };
-  const observerCallback = (mutationsList: MutationRecord[]) => {
-    for (const mutation of mutationsList) {
-      if (mutation.type === "attributes" && mutation.attributeName === "is-video-playback-mode-selected") {
-        const isVideo = avToggle.getAttribute("is-video-playback-mode-selected") === "true";
-        handleAVSwitch(isVideo);
-      }
-    }
-  };
-
-  avButtonObserver = new MutationObserver(observerCallback);
-
-  avButtonObserver.observe(avToggle, {
-    attributes: true,
-    attributeFilter: ["is-video-playback-mode-selected"],
-  });
-  handleAVSwitch(avToggle.getAttribute("is-video-playback-mode-selected") === "true");
-  logCore("Set up a/v toggle observer");
 }

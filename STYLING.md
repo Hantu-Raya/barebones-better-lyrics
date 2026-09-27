@@ -1426,7 +1426,7 @@ To customize instrumental breaks:
 ## 18. Autoscroll Resume Button
 
 ```css
-.autoscroll-resume-button {
+.blyrics-autoscroll-resume-button {
   font-family: var(--blyrics-font-family, var(--blyrics-default-font-family));
   position: absolute;
   display: block;
@@ -1452,7 +1452,7 @@ To customize instrumental breaks:
   transition: opacity 0.15s linear 0.05s, transform 0.2s cubic-bezier(0.5, 1, 0.89, 1), text-shadow 0.25s ease;
 }
 
-.autoscroll-resume-button[autoscroll-hidden="true"] {
+.blyrics-autoscroll-resume-button[autoscroll-hidden="true"] {
   transition: opacity 0.1s linear, transform 0.15s ease-in;
   opacity: 0;
   pointer-events: none;

@@ -10,15 +10,15 @@ import { resumeAllAutoscroll } from "@braccato/core";
  * @returns The resume scroll button element
  */
 export function getResumeScrollElement(): HTMLElement {
-  let elem = document.getElementById("autoscroll-resume-button");
+  let elem = document.getElementById("blyrics-autoscroll-resume-button");
   if (!elem) {
     const wrapper = document.createElement("div");
-    wrapper.id = "autoscroll-resume-wrapper";
-    wrapper.className = "autoscroll-resume-wrapper";
+    wrapper.id = "blyrics-autoscroll-resume-wrapper";
+    wrapper.className = "blyrics-autoscroll-resume-wrapper";
     elem = document.createElement("button");
-    elem.id = "autoscroll-resume-button";
+    elem.id = "blyrics-autoscroll-resume-button";
     elem.innerText = t("lyrics_resumeAutoscroll");
-    elem.classList.add("autoscroll-resume-button");
+    elem.classList.add("blyrics-autoscroll-resume-button");
     elem.setAttribute("autoscroll-hidden", "true");
     elem.addEventListener("click", () => {
       resumeAllAutoscroll();
