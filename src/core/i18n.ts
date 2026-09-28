@@ -29,9 +29,9 @@ export const SUPPORTED_LOCALES = LOCALE_CODES.map(code => ({
 
 // -- Locale Override Engine --------------------------
 
+// No retained message uses placeholders, so an entry resolves to its message text as-is.
 interface MessageEntry {
   message: string;
-  placeholders?: Record<string, { content: string }>;
 }
 
 let overrideMessages: Record<string, MessageEntry> | null = null;
@@ -61,31 +61,11 @@ export async function loadLocaleOverride(): Promise<void> {
   }
 }
 
-function resolveMessage(entry: MessageEntry, substitutions?: string | string[]): string {
-  let result = entry.message;
+export function t(key: string): string {
+  const override = overrideMessages?.[key];
+  if (override) return override.message;
 
-  if (!entry.placeholders && !substitutions) return result;
-
-  const subs = substitutions ? (Array.isArray(substitutions) ? substitutions : [substitutions]) : [];
-
-  if (entry.placeholders) {
-    for (const [name, def] of Object.entries(entry.placeholders)) {
-      const resolved = def.content.replace(/\$(\d+)/g, (_, idx) => subs[parseInt(idx, 10) - 1] ?? "");
-      result = result.replace(new RegExp(`\\$${name}\\$`, "gi"), () => resolved);
-    }
-  }
-
-  return result;
-}
-
-export function t(key: string, substitutions?: string | string[]): string {
-  if (overrideMessages) {
-    const entry = overrideMessages[key];
-    if (entry) return resolveMessage(entry, substitutions);
-  }
-
-  const message = chrome.i18n.getMessage(key, substitutions);
-  return message || key;
+  return chrome.i18n.getMessage(key) || key;
 }
 
 export function getLanguageDisplayName(langCode: string): string {
@@ -99,14 +79,12 @@ export function getLanguageDisplayName(langCode: string): string {
   }
 }
 
-// Consumers that cache resolved strings rather than calling t() at render time have to
-// republish here, once the override has actually swapped, not from their own storage listener.
-export function subscribeToLocaleChanges(onLocaleApplied?: () => void): void {
+// Re-resolves the override once the display language changes, so later t() calls use it.
+export function subscribeToLocaleChanges(): void {
   chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== "sync" || !changes.uiLanguage) return;
     await loadLocaleOverride();
     injectI18nCssVars();
-    onLocaleApplied?.();
   });
 }
 

@@ -69,7 +69,6 @@ export default function initializePlayerBridge() {
             artist: author,
             duration,
             browserTime: Date.now(),
-            isPlaying,
             playing: isPlaying && !isBuffering && !isSeeking && !isUiSeeking,
             playbackRate: observedVideoElement?.playbackRate ?? 1,
             contentRect: cachedContentRect ?? { width: 0, height: 0 },

@@ -60,54 +60,14 @@
     transition: none;
 }
 
-/* State: small-loader */
-#blyrics-loader[state="small-loader"] {
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(calc(-50cqh + 5rem));
-}
-
-#blyrics-loader[state="small-loader"] ~ #blyrics-wrapper {
-    transform: translateY(12rem);
-}
-
-/* State: showing-message */
-#blyrics-loader[state="showing-message"] {
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(calc(-50cqh + 5rem));
-}
-
-#blyrics-loader[state="showing-message"]:before {
-    display: none;
-}
-
-#blyrics-loader[state="showing-message"]:after {
-    animation-play-state: paused !important;
-    background: none !important;
-    -webkit-text-fill-color: var(--blyrics-ui-text-color) !important;
-    color: var(--blyrics-ui-text-color) !important;
-    opacity: 0.8;
-}
-
-#blyrics-loader[state="showing-message"] ~ #blyrics-wrapper {
-    transform: translateY(12rem);
-}
-
 /* State: exiting */
-#blyrics-loader[state="exiting"],
-#blyrics-loader[state="exiting-message"] {
+#blyrics-loader[state="exiting"] {
     visibility: visible;
     opacity: 0;
     transform: translateY(calc(-50cqh - 2rem));
 }
 
-#blyrics-loader[state="exiting-message"]:before {
-    display: none;
-}
-
-#blyrics-loader[state="exiting"] ~ #blyrics-wrapper,
-#blyrics-loader[state="exiting-message"] ~ #blyrics-wrapper {
+#blyrics-loader[state="exiting"] ~ #blyrics-wrapper {
     transform: translateY(0);
 }
 
@@ -127,7 +87,6 @@
 }
 
 #blyrics-loader:after {
-	color: color-mix(in srgb, var(--blyrics-ui-text-color) 70%, transparent);
 	content: var(--blyrics-loader-text, "");
 	font-family: var(--blyrics-font-family, var(--blyrics-default-font-family));
 	font-size: 2.2rem;
@@ -136,9 +95,6 @@
 	line-height: 1.5;
 	white-space: pre;
 	z-index: 1;
-}
-
-#blyrics-loader:not([state="showing-message"]):not([state="exiting-message"]):after {
 	background: var(--blyrics-shimmer-gradient) 0 0 / 200% 100%;
 	-webkit-background-clip: text;
 	background-clip: text;
@@ -219,8 +175,6 @@
 	display: none !important;
 }
 
-/* No lyrics button container */
-
 /* Footer styles */
 .blyrics-footer {
 	height: 0;
@@ -235,195 +189,15 @@
 	flex-wrap: wrap;
 }
 
-.blyrics-footer img {
-	user-select: none;
-}
-
-/* The "Even Better Lyrics" theme scales every direct div child of
-   .blyrics-user-scrolling on hover; we don't want that on the footer. Pin the
-   resting scale rather than clearing the transform, or the footer grows to 1
-   from the .blyrics-container > div default of 0.95 on every hover. */
-.blyrics-container > .blyrics-footer:hover,
-.blyrics-user-scrolling > .blyrics-footer:hover {
-	transform: scale(var(--blyrics-scale));
-}
-
-.blyrics-footer__unison {
-	flex-basis: 100%;
-	width: 100%;
-	display: flex;
-	margin-top: 2rem;
-}
-
-.blyrics-footer__unison-author {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	justify-content: center;
-	min-width: 0;
-}
-
-.blyrics-footer__unison-author-row {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 10px;
-	font-size: 14px;
-}
-
-.blyrics-footer__author-name {
-	font-weight: 600;
-	color: var(--blyrics-footer-link-color);
-}
-
-.blyrics-footer__unison-author-label {
-	font-size: 11px;
-	color: var(--blyrics-footer-text-color);
-}
-
-.blyrics-footer__unison-divider {
-	width: 1px;
-	align-self: stretch;
-	background-color: hsla(0, 0%, 100%, 0.04);
-}
-
-.blyrics-footer__unison-actions-block {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-	align-items: flex-end;
-}
-
-.blyrics-footer__unison-actions {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.blyrics-footer__unison-score-line {
-	font-size: 11px;
-	font-variant-numeric: tabular-nums;
-	color: var(--blyrics-footer-text-color);
-}
-
-.blyrics-footer__unison-score-line > strong {
-	color: var(--blyrics-footer-link-color);
-	font-weight: 500;
-}
-
-.blyrics-gam__ring {
-	position: relative;
-	width: 36px;
-	height: 36px;
-	flex-shrink: 0;
-	display: grid;
-	place-items: center;
-}
-
-.blyrics-gam__ring svg {
-	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	transform: rotate(-90deg);
-}
-
-.blyrics-gam__ring-track {
-	fill: none;
-	stroke: hsla(0, 0%, 100%, 0.16);
-	stroke-width: 4;
-}
-
-.blyrics-gam__ring-prog {
-	fill: none;
-	stroke: #ffc83d;
-	stroke-width: 4;
-	stroke-linecap: round;
-}
-
-.blyrics-gam__ring-num {
-	font-size: 13px;
-	font-weight: 700;
-	font-variant-numeric: tabular-nums;
-	color: #f5f5f7;
-}
-
-.blyrics-gam__tier {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	height: 28px;
-	padding: 0 12px 0 7px;
-	border-radius: 999px;
-	background-color: hsla(0, 0%, 100%, 0.08);
-	box-shadow: inset 0 1px 0 0 #ffffff13, inset 0 -1px 0 0 #ffffff06;
-	font-size: 12px;
-	font-weight: 500;
-	color: #f5f5f7;
-	white-space: nowrap;
-}
-
-.blyrics-gam__gem {
-	width: 18px;
-	height: 19px;
-	flex-shrink: 0;
-	display: block;
-}
-
-.blyrics-gam__featured {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-}
-
-.blyrics-gam__featured-gem {
-	width: 24px;
-	height: 24px;
-	flex-shrink: 0;
-	display: block;
-}
-
-.blyrics-gam__seal {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	width: fit-content;
-	padding: 0 10px 0 0;
-	border-radius: 8px;
-	background: hsla(0, 0%, 100%, 0.1);
-}
-
-.blyrics-gam__seal-icon {
-	width: 24px;
-	height: 24px;
-	flex-shrink: 0;
-	object-fit: contain;
-	transform: scale(1.05) rotate(-6deg);
-}
-
-.blyrics-gam__seal-label {
-	font-size: 12px;
-	font-weight: 500;
-	line-height: 1.15;
-	color: #ffffff;
-}
-
 ytmusic-player-page:not([is-mweb-modernization-enabled]) #side-panel.blyrics-has-dock {
 	position: relative;
 }
 
+/* Anchored to the side panel's bottom-right corner. */
 .blyrics-dock {
 	position: absolute;
 	z-index: 50;
 	pointer-events: none;
-	transform: translateY(var(--dock-y-shift, 0));
-	transition:
-		transform 125ms cubic-bezier(0.4, 0, 0.2, 1),
-		top 280ms cubic-bezier(0.4, 0, 0.2, 1),
-		left 280ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.blyrics-dock[data-position="bottom-right"] {
 	top: calc(100% - 64px);
 	left: 100%;
 	--dock-tx: -100%;
@@ -451,7 +225,7 @@ ytmusic-player-page:not([is-mweb-modernization-enabled]) #side-panel.blyrics-has
 		filter 320ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.blyrics-dock__inner:not(:has(.blyrics-dock__controls > *)):not(:has(.blyrics-dock__voting)) {
+.blyrics-dock__inner:not(:has(.blyrics-dock__controls > *)) {
 	display: none;
 }
 
@@ -474,8 +248,7 @@ ytmusic-player-page:not([is-mweb-modernization-enabled]) #side-panel.blyrics-has
 }
 
 /* -- Lyrics dock controls -------------------------------------------------- */
-.blyrics-dock__controls,
-.blyrics-dock__voting {
+.blyrics-dock__controls {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -494,19 +267,6 @@ ytmusic-player-page:not([is-mweb-modernization-enabled]) #side-panel.blyrics-has
 .blyrics-dock__inner:focus-within .blyrics-dock__controls,
 .blyrics-dock__inner--expanded .blyrics-dock__controls {
 	opacity: 1;
-}
-
-.blyrics-dock__voting {
-	max-width: 160px;
-	overflow: hidden;
-	transition:
-		max-width 280ms cubic-bezier(0.4, 0, 0.2, 1),
-		opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.blyrics-dock__voting--hidden {
-	max-width: 0;
-	opacity: 0;
 }
 
 .blyrics-dock__divider {
@@ -940,29 +700,6 @@ ytmusic-player-page:not([is-mweb-modernization-enabled]) #side-panel.blyrics-has
 	z-index: 2;
 }
 
-.blyrics-footer__container[class*="transparent"] {
-	background-color: transparent;
-	border: none;
-	padding: 0;
-	display: flex;
-	gap: .75rem;
-}
-
-.blyrics-footer__container > a {
-	color: var(--blyrics-footer-link-color);
-	text-decoration: none;
-	text-underline-offset: 2px;
-}
-
-.blyrics-footer__container:hover > a {
-	text-decoration: underline;
-}
-
-.blyrics-footer__container > img {
-	margin-left: -6px;
-	margin-right: 0.75rem;
-}
-
 .blyrics-autoscroll-resume-wrapper {
 	position: relative;
 	width: 100%;
@@ -1022,10 +759,6 @@ ytmusic-player-page:not([is-mweb-modernization-enabled]) #side-panel.blyrics-has
 	outline-color: white;
 	outline-width: 1px;
 }
-
-/* Watermark styles */
-
-/* Song info styles */
 
 @keyframes blyrics-spin {
 	0% {

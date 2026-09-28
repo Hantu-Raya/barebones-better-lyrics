@@ -79,14 +79,6 @@
     "message": "A Better Lyrics dalszövegeket keres...",
     "description": "Loading message while searching for lyrics"
   },
-  "lyrics_stillSearching": {
-    "message": "Még mindig keressük az időzített dalszöveget...",
-    "description": "Loading message while still searching"
-  },
-  "lyrics_noSyncedLyrics": {
-    "message": "A Better Lyrics nem talált időzített dalszöveget",
-    "description": "Message when no synced lyrics found"
-  },
   "lyrics_adPlaying": {
     "message": "[lift zene]",
     "description": "Message shown during ad playback"

@@ -79,14 +79,6 @@
     "message": "Better Lyrics sucht nach Songtexten...",
     "description": "Loading message while searching for lyrics"
   },
-  "lyrics_stillSearching": {
-    "message": "Suche noch nach synchronisierten Texten...",
-    "description": "Loading message while still searching"
-  },
-  "lyrics_noSyncedLyrics": {
-    "message": "Better Lyrics konnte keine synchronisierten Texte finden",
-    "description": "Message when no synced lyrics found"
-  },
   "lyrics_adPlaying": {
     "message": "[Fahrstuhlmusik]",
     "description": "Message shown during ad playback"

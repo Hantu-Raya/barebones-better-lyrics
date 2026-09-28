@@ -79,14 +79,6 @@
     "message": "Better Lyrics is searching for lyrics...",
     "description": "Loading message while searching for lyrics"
   },
-  "lyrics_stillSearching": {
-    "message": "Still searching for synced lyrics...",
-    "description": "Loading message while still searching"
-  },
-  "lyrics_noSyncedLyrics": {
-    "message": "Better Lyrics could not find synced lyrics",
-    "description": "Message when no synced lyrics found"
-  },
   "lyrics_adPlaying": {
     "message": "[elevator music]",
     "description": "Message shown during ad playback"

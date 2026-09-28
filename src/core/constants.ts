@@ -15,13 +15,6 @@ export {
 export const TAB_HEADER_CLASS = "tab-header style-scope ytmusic-player-page" as const;
 export const TAB_CONTENT_CLASS = "tab-content style-scope tp-yt-paper-tab" as const;
 export const DOCK_CLASS = "blyrics-dock" as const;
-export const DOCK_DEFAULT_POSITION = "bottom-right" as const;
-export const DOCK_CONTROL_ORDER_DEFAULT = [
-  "source",
-  "translate",
-  "offset",
-  "refresh",
-] as const;
 
 // DOM Selectors
 export const TAB_RENDERER_SELECTOR = "#tab-renderer" as const;
@@ -48,10 +41,7 @@ export const PROVIDER_TIMEOUT_MS = 20_000;
 // Log Prefixes
 export const LOG_PREFIX = "[BetterLyrics]" as const;
 
-// Initialization and General Logs
-export const GENERAL_ERROR_LOG = "[BetterLyrics] Error:" as const;
 export const NO_LYRICS_FOUND_LOG = "[BetterLyrics] No lyrics found for the current song" as const;
-export const MUSIC_NOTES = "♪𝅘𝅥𝅮𝅘𝅥𝅯𝅘𝅥𝅰𝅘𝅥𝅱𝅘𝅥𝅲" as const;
 
 export const LYRICS_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const LYRICS_NEGATIVE_CACHE_TTL_MS = 30 * 60 * 1000;
@@ -62,20 +52,21 @@ export const PLAYER_BAR_SELECTOR = "ytmusic-player-bar" as const;
 export const AD_PLAYING_ATTR = "is-advertisement" as const;
 export const LYRICS_AD_OVERLAY_ID = "blyrics-ad-overlay" as const;
 
-export type SyncType = "syllable" | "word" | "line" | "unsynced";
+/** How a source's lyrics are timed; only timed sources are ever shown. */
+export type SyncType = "syllable" | "line";
 
 interface ProviderConfig {
   key: LyricSourceKey;
   displayName: string;
   syncType: SyncType;
-  priority: number;
 }
 
-export const PROVIDER_CONFIGS: ProviderConfig[] = [
-  { key: "bLyrics-richsynced", displayName: "Better Lyrics", syncType: "syllable", priority: 0 },
-  { key: "bLyrics-synced", displayName: "Better Lyrics", syncType: "line", priority: 1 },
-  { key: "lrclib-synced", displayName: "LRCLIB", syncType: "line", priority: 2 },
-  { key: "yt-lyrics", displayName: "YouTube", syncType: "line", priority: 3 },
-] as const;
+/** Sources in fixed priority order: Better Lyrics API, then LRCLIB, then YouTube Music's own lyrics. */
+export const PROVIDER_CONFIGS: readonly ProviderConfig[] = [
+  { key: "bLyrics-richsynced", displayName: "Better Lyrics", syncType: "syllable" },
+  { key: "bLyrics-synced", displayName: "Better Lyrics", syncType: "line" },
+  { key: "lrclib-synced", displayName: "LRCLIB", syncType: "line" },
+  { key: "yt-lyrics", displayName: "YouTube", syncType: "line" },
+];
 
-export const LYRIC_SOURCE_KEYS = PROVIDER_CONFIGS.map(p => p.key);
+export const LYRIC_SOURCE_KEYS: readonly LyricSourceKey[] = PROVIDER_CONFIGS.map(p => p.key);

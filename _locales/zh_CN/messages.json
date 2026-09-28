@@ -79,14 +79,6 @@
     "message": "Better Lyrics 正在搜索歌词...",
     "description": "Loading message while searching for lyrics"
   },
-  "lyrics_stillSearching": {
-    "message": "仍在搜索同步歌词...",
-    "description": "Loading message while still searching"
-  },
-  "lyrics_noSyncedLyrics": {
-    "message": "Better Lyrics 未能找到同步歌词",
-    "description": "Message when no synced lyrics found"
-  },
   "lyrics_adPlaying": {
     "message": "[电梯音乐]",
     "description": "Message shown during ad playback"

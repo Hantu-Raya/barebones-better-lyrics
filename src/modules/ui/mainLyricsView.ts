@@ -34,7 +34,8 @@ export function currentTickOptions(eventCreationTime: number, isPlaying: boolean
     lyricOffset: AppState.lyricOffset,
     richsyncOffsetTrim: AppState.richsyncOffsetTrim,
     lineOffsetTrim: AppState.lineOffsetTrim,
-    passiveScrollEnabled: AppState.isPassiveScrollEnabled,
+    // Only affects untimed lines, which the fork never renders beyond the "not found" placeholder.
+    passiveScrollEnabled: true,
   };
 }
 

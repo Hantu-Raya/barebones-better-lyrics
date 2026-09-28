@@ -9,7 +9,7 @@ export interface NextResponse {
   readonly continuationContents?: ContinuationContents;
 }
 
-export interface Contents {
+interface Contents {
   readonly singleColumnMusicWatchNextResultsRenderer: SingleColumnMusicWatchNextResultsRenderer;
 }
 
@@ -168,7 +168,7 @@ export interface LongBylineText {
   readonly runs?: PurpleRun[];
 }
 
-export interface PurpleRun {
+interface PurpleRun {
   readonly text: string;
   readonly navigationEndpoint?: Endpoint;
 }
@@ -417,7 +417,7 @@ type LikeParams = "OAI%3D";
 
 type Status = "LIKE" | "INDIFFERENT" | "DISLIKE";
 
-export interface CurrentVideoEndpointClass {
+interface CurrentVideoEndpointClass {
   readonly clickTrackingParams: string;
   readonly watchEndpoint: CurrentVideoEndpointWatchEndpoint;
 }
@@ -467,7 +467,7 @@ interface ThumbnailDetailsClass {
   readonly thumbnails: ThumbnailElement[];
 }
 
-export interface ThumbnailElement {
+interface ThumbnailElement {
   readonly url: string;
   readonly width: number;
   readonly height: number;
@@ -644,7 +644,7 @@ type SyncMode = "QUEUE_UPDATE_SYNC_MODE_DEDUPE_AGAINST_LOCAL";
 
 type TitleEnum = "Up next" | "Lyrics" | "Related";
 
-export interface ContinuationContents {
+interface ContinuationContents {
   readonly playlistPanelContinuation: PlaylistPanelContinuation;
 }
 
@@ -738,7 +738,7 @@ interface FluffyToggleButtonRenderer {
   readonly trackingParams: string;
 }
 
-export interface PlayerOverlays {
+interface PlayerOverlays {
   readonly playerOverlayRenderer: PlayerOverlayRenderer;
 }
 
@@ -768,7 +768,7 @@ interface BrowserMediaSessionRenderer {
   readonly thumbnailDetails: ThumbnailDetailsClass;
 }
 
-export interface ResponseContext {
+interface ResponseContext {
   readonly serviceTrackingParams: ServiceTrackingParam[];
   readonly innertubeTokenJar?: InnertubeTokenJar;
 }
@@ -798,7 +798,7 @@ type Key = "c" | "cver" | "yt_li" | "GetWatchNext_rid" | "logged_in" | "client.v
 
 type Service = "CSI" | "GFEEDBACK" | "ECATCHER";
 
-export interface VideoReporting {
+interface VideoReporting {
   readonly reportFormModalRenderer: ReportFormModalRenderer;
 }
 

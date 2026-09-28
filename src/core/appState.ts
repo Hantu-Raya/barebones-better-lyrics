@@ -1,7 +1,6 @@
-import type { LyricDecorations, LyricsData } from "@modules/lyrics/injectLyrics";
-import { createLyrics, type ParsedLyrics } from "@modules/lyrics/lyrics";
+import type { LyricsData } from "@modules/lyrics/injectLyrics";
+import { createLyrics } from "@modules/lyrics/lyrics";
 import type { LyricSourceKey } from "@modules/lyrics/providers/shared";
-import { flushLoader } from "@modules/ui/dom";
 import { clearSongCache } from "@core/storage";
 
 export interface PlayerDetails {
@@ -11,7 +10,6 @@ export interface PlayerDetails {
   artist: string;
   duration: string;
   browserTime: number;
-  isPlaying: boolean;
   playing: boolean;
   playbackRate?: number;
   contentRect: {
@@ -24,12 +22,10 @@ interface AppStateType {
   suppressZeroTime: number;
   areLyricsTicking: boolean;
   lyricData: LyricsData | null;
-  parsedLyrics: ParsedLyrics | null;
-  lyricDecorations: LyricDecorations;
   areLyricsLoaded: boolean;
   lyricInjectionFailed: boolean;
   lastVideoId: string | null;
-  lastVideoDetails: any | null;
+  lastVideoDetails: string | null;
   lyricInjectionPromise: Promise<any> | null;
   queueLyricInjection: boolean;
   loaderAnimationEndTimeout: number | undefined;
@@ -38,13 +34,12 @@ interface AppStateType {
   isTranslateEnabled: boolean;
   translationDisabledLanguages: string[];
   translationLanguage: string;
-  isPassiveScrollEnabled: boolean;
   currentInjectionId: number;
   lyricOffset: number;
   globalLyricOffset: number;
   richsyncOffsetTrim: number;
   lineOffsetTrim: number;
-  currentProviderKey: string | null;
+  currentProviderKey: LyricSourceKey | null;
   manualProviderKey: LyricSourceKey | null;
   availableProviderKeys: LyricSourceKey[];
 }
@@ -53,8 +48,6 @@ export const AppState: AppStateType = {
   suppressZeroTime: 0,
   areLyricsTicking: false,
   lyricData: null,
-  parsedLyrics: null,
-  lyricDecorations: {},
   areLyricsLoaded: false,
   lyricInjectionFailed: false,
   lastVideoId: null,
@@ -67,7 +60,6 @@ export const AppState: AppStateType = {
   isTranslateEnabled: false,
   translationDisabledLanguages: [],
   translationLanguage: "en",
-  isPassiveScrollEnabled: true,
   currentInjectionId: 0,
   lyricOffset: 0,
   globalLyricOffset: 0,
@@ -101,7 +93,6 @@ export function handleModifications(detail: PlayerDetails): void {
 
   if (AppState.lyricInjectionPromise) {
     AppState.lyricAbortController?.abort("New song is being loaded");
-    // flushLoader(); // Flush loader immediately when aborting
     // Don't wait for old promise - start new song immediately
     // Old promise will complete eventually and its finally block will handle cleanup
   }

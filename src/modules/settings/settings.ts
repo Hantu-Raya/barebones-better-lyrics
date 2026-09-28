@@ -4,7 +4,7 @@ import { clearCache as clearTranslationCache } from "@modules/lyrics/translation
 import { applyGlobalOffsets } from "@modules/ui/lyricsDock/offset";
 
 // Offsets are seconds; anything outside this range (or non-finite) in storage is treated as 0.
-export const MAX_GLOBAL_OFFSET_SECONDS = 30;
+const MAX_GLOBAL_OFFSET_SECONDS = 30;
 
 function sanitizeOffset(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= MAX_GLOBAL_OFFSET_SECONDS
@@ -49,19 +49,10 @@ export function listenForSettingsChanges(): void {
     if (changed.some(key => OFFSET_KEYS.includes(key))) {
       loadLyricOffsetSettings();
     }
-    if (changes.isPassiveScrollEnabled) {
-      loadPassiveScrollSetting();
-    }
     if (changes.cacheClearedAt) {
       clearTranslationCache();
       reloadLyrics();
     }
-  });
-}
-
-export function loadPassiveScrollSetting(): void {
-  getStorage({ isPassiveScrollEnabled: true }, items => {
-    AppState.isPassiveScrollEnabled = items.isPassiveScrollEnabled !== false;
   });
 }
 

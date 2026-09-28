@@ -1,7 +1,6 @@
 import {
   AD_PLAYING_ATTR,
   DOCK_CLASS,
-  DOCK_DEFAULT_POSITION,
   FOOTER_CLASS,
   LINE_CLASS,
   LYRICS_AD_OVERLAY_ID,
@@ -11,14 +10,13 @@ import {
   LYRICS_WRAPPER_ID,
   PLAYER_BAR_SELECTOR,
   PROVIDER_CONFIGS,
-  type SyncType,
   TAB_RENDERER_SELECTOR,
   TRANSLATED_LYRICS_CLASS,
   WORD_HIGHLIGHT_CLASS,
 } from "@constants";
 import { AppState } from "@core/appState";
 import { t } from "@core/i18n";
-import { type ObserverHandle, observeResize } from "@modules/ui/layout/layoutWidth";
+import type { LyricSourceKey } from "@modules/lyrics/providers/shared";
 import { lyricsElementAdded, mainView } from "@modules/ui/mainLyricsView";
 import { getResumeScrollElement } from "@modules/ui/resumeScrollButton";
 import { reflow, toMs } from "@braccato/core/util";
@@ -28,11 +26,6 @@ import { loadSavedOffset } from "./lyricsDock/offset";
 import { scrollEventHandler } from "./observer";
 import { restoreNativeLyricsFocus } from "./nativeLyricsFocus";
 
-const providerDisplayInfo: Record<string, { name: string; syncType: SyncType }> = Object.fromEntries(
-  PROVIDER_CONFIGS.map(p => [p.key, { name: p.displayName, syncType: p.syncType }])
-);
-
-let lyricsObserver: MutationObserver | null = null;
 let adStateObserver: MutationObserver | null = null;
 /**
  * Creates or reuses the lyrics wrapper element and sets up scroll event handling.
@@ -100,31 +93,28 @@ export function createLyricsWrapper(): HTMLElement {
 }
 
 /**
- * Adds a footer with source attribution to the lyrics container.
+ * Adds a plain-text footer naming the lyric source (no links or remote logos) to the lyrics
+ * container, records the provider for the dock and mounts it.
  *
- * @param source - Source name, shown when the provider key has no display info
  * @param providerKey - Provider key for display name and sync type lookup
  */
-export function addFooter(source: string, providerKey?: string): void {
-  if (document.getElementsByClassName(FOOTER_CLASS).length !== 0) {
-    document.getElementsByClassName(FOOTER_CLASS)[0].remove();
-  }
+export function addFooter(providerKey: LyricSourceKey): void {
+  document.getElementsByClassName(FOOTER_CLASS)[0]?.remove();
 
   const lyricsElement = document.getElementsByClassName(LYRICS_CLASS)[0];
   const footer = document.createElement("div");
   footer.classList.add(FOOTER_CLASS);
   lyricsElement.appendChild(footer);
   observeFooterForRecalc(footer);
-  createFooter();
 
-  const footerLink = document.getElementById("betterLyricsFooterLink") as HTMLElement;
+  const footerContainer = document.createElement("div");
+  footerContainer.className = `${FOOTER_CLASS}__container`;
+  footerContainer.appendChild(document.createTextNode(t("lyrics_source")));
 
-  const info = providerKey ? providerDisplayInfo[providerKey] : null;
-
-  footerLink.textContent = "";
-
+  const footerSource = document.createElement("span");
+  const info = PROVIDER_CONFIGS.find(config => config.key === providerKey);
   if (info) {
-    footerLink.appendChild(document.createTextNode(info.name));
+    footerSource.appendChild(document.createTextNode(info.displayName));
     const iconWrapper = document.createElement("span");
     iconWrapper.style.opacity = "0.5";
     iconWrapper.style.marginLeft = "6px";
@@ -135,13 +125,13 @@ export function addFooter(source: string, providerKey?: string): void {
     if (svgIcon) {
       iconWrapper.appendChild(svgIcon);
     }
-    footerLink.appendChild(iconWrapper);
-  } else {
-    footerLink.textContent = source;
+    footerSource.appendChild(iconWrapper);
   }
+  footerContainer.appendChild(footerSource);
+  footer.appendChild(footerContainer);
 
-  AppState.currentProviderKey = providerKey ?? null;
-  void loadSavedOffset(AppState.lastLoadedVideoId, AppState.currentProviderKey);
+  AppState.currentProviderKey = providerKey;
+  void loadSavedOffset(AppState.lastLoadedVideoId, providerKey);
 
   mountDock();
 
@@ -225,30 +215,16 @@ function evaluateDockProximity(event: MouseEvent): void {
 
   const rect = inner.getBoundingClientRect();
   const dock = inner.parentElement as HTMLElement | null;
-  const dockActive =
-    rect.width > 0 &&
-    !dock?.classList.contains(`${DOCK_CLASS}--hidden`);
+  const dockActive = rect.width > 0 && !dock?.classList.contains(`${DOCK_CLASS}--hidden`);
 
   if (!dockActive) return;
 
-  const position = dock?.dataset.position ?? "";
-  let { left, right, top, bottom } = rect;
-  if (position.includes("right")) left -= DOCK_PROXIMITY;
-  if (position.includes("left")) right += DOCK_PROXIMITY;
-  if (position.startsWith("top")) {
-    bottom += DOCK_PROXIMITY;
-  } else {
-    top -= DOCK_PROXIMITY;
-    // Activating a bottom dock translates it up by --dock-y-shift, which would carry this
-    // zone off the cursor and oscillate. Extend the zone down to the dock's resting edge so
-    // the shift can never eject the cursor. The live matrix stays exact mid-slide and follows
-    // any themed shift value.
-    const transform = dock ? getComputedStyle(dock).transform : "none";
-    const shiftY = transform === "none" ? 0 : new DOMMatrixReadOnly(transform).m42;
-    bottom -= shiftY;
-  }
+  // The dock is anchored bottom-right, so the trigger zone extends left and up into the panel.
+  const left = rect.left - DOCK_PROXIMITY;
+  const top = rect.top - DOCK_PROXIMITY;
 
-  let dockNear = event.clientX >= left && event.clientX <= right && event.clientY >= top && event.clientY <= bottom;
+  let dockNear =
+    event.clientX >= left && event.clientX <= rect.right && event.clientY >= top && event.clientY <= rect.bottom;
 
   // While the source dropdown is open, treat its bounds (plus a bridging margin) as
   // part of the dock so moving onto it does not collapse the dock or drop the player bar.
@@ -363,7 +339,7 @@ function animateControlsSwap(oldControls: HTMLElement, newControls: HTMLElement)
 // Mounts the dock if absent, otherwise refreshes its controls in place. The dock
 // element persists across re-injections so the cursor's hover state (and the expanded
 // reveal) is never lost during a provider switch or toggle.
-export function mountDock(position: string = DOCK_DEFAULT_POSITION): void {
+function mountDock(): void {
   let dock = document.getElementsByClassName(DOCK_CLASS)[0] as HTMLElement | undefined;
   let inner: HTMLElement | null;
 
@@ -394,7 +370,6 @@ export function mountDock(position: string = DOCK_DEFAULT_POSITION): void {
     sidePanel.classList.add(DOCK_HOST_CLASS);
   }
 
-  dock.dataset.position = position;
   closeSourceMenu();
 
   dockControlsSwapFinalize?.();
@@ -448,53 +423,22 @@ export function unmountDock(): void {
   document.querySelector("#side-panel")?.classList.remove(DOCK_HOST_CLASS);
 }
 
-/**
- * Creates the footer: a plain-text attribution naming the lyric source. No links or remote logos.
- */
-function createFooter(): void {
-  try {
-    const footer = document.getElementsByClassName(FOOTER_CLASS)[0] as HTMLElement;
-    footer.replaceChildren();
+type LoaderState = "full-loader" | "exiting" | "hidden";
 
-    const footerContainer = document.createElement("div");
-    footerContainer.className = `${FOOTER_CLASS}__container`;
-    footerContainer.appendChild(document.createTextNode(t("lyrics_source")));
-
-    const footerSource = document.createElement("span");
-    footerSource.id = "betterLyricsFooterLink";
-    footerContainer.appendChild(footerSource);
-
-    footer.appendChild(footerContainer);
-    footer.removeAttribute("is-empty");
-  } catch {}
-}
-
-let loaderStateTimeout: number | undefined;
-
-type LoaderState = "full-loader" | "small-loader" | "showing-message" | "exiting" | "exiting-message" | "hidden";
-
-function setLoaderState(state: LoaderState, text?: string): void {
-  const loader = document.getElementById(LYRICS_LOADER_ID);
-  if (!loader) return;
-
-  loader.setAttribute("state", state);
-  if (text !== undefined) {
-    loader.style.setProperty("--blyrics-loader-text", `"${text}"`);
-  }
+function setLoaderState(state: LoaderState): void {
+  document.getElementById(LYRICS_LOADER_ID)?.setAttribute("state", state);
 }
 
 /**
  * Renders and displays the loading spinner for lyrics fetching.
  */
-export function renderLoader(small = false): void {
+export function renderLoader(): void {
   if (isAdPlaying()) {
     return;
   }
   closeSourceMenu();
   setDockSuppression("loading", true);
-  if (!small) {
-    cleanup();
-  }
+  cleanup();
 
   try {
     const tabRenderer = document.querySelector(TAB_RENDERER_SELECTOR) as HTMLElement;
@@ -505,7 +449,6 @@ export function renderLoader(small = false): void {
       tabRenderer.prepend(loaderWrapper);
     }
 
-    clearTimeout(loaderStateTimeout);
     clearTimeout(AppState.loaderAnimationEndTimeout);
 
     // Reset state before applying new one to trigger animations correctly
@@ -515,50 +458,31 @@ export function renderLoader(small = false): void {
     }
 
     loaderWrapper.hidden = false;
-
-    if (small) {
-      setLoaderState("small-loader", t("lyrics_stillSearching"));
-    } else {
-      setLoaderState("full-loader", t("lyrics_searching"));
-    }
+    loaderWrapper.style.setProperty("--blyrics-loader-text", `"${t("lyrics_searching")}"`);
+    setLoaderState("full-loader");
   } catch {}
 }
 
 /**
- * Removes the loading spinner with animation and cleanup.
+ * Removes the loading spinner with animation and cleanup. Flushes immediately so the lyrics
+ * animate in while the loader animates out.
  */
-export function flushLoader(showNoSyncAvailable = false): void {
+export function flushLoader(): void {
   try {
     setDockSuppression("loading", false);
     const loaderWrapper = document.getElementById(LYRICS_LOADER_ID);
     if (!loaderWrapper) return;
 
-    clearTimeout(loaderStateTimeout);
     clearTimeout(AppState.loaderAnimationEndTimeout);
+    setLoaderState("exiting");
 
-    const performExit = (fromMessage = false) => {
-      setLoaderState(fromMessage ? "exiting-message" : "exiting");
-
-      const duration = toMs(
-        window.getComputedStyle(loaderWrapper).getPropertyValue("--blyrics-loader-transition-duration")
-      );
-      AppState.loaderAnimationEndTimeout = window.setTimeout(() => {
-        setLoaderState("hidden");
-        loaderWrapper.hidden = true;
-      }, duration * 2); // Make longer than css duration
-    };
-
-    if (showNoSyncAvailable) {
-      setLoaderState("showing-message", t("lyrics_noSyncedLyrics"));
-
-      loaderStateTimeout = window.setTimeout(() => {
-        performExit(true);
-      }, 3000);
-    } else {
-      // Lyrics were found, flush immediately to allow lyrics to animate in
-      // simultaneously with the loader animating out
-      performExit(loaderWrapper.getAttribute("state") === "showing-message");
-    }
+    const duration = toMs(
+      window.getComputedStyle(loaderWrapper).getPropertyValue("--blyrics-loader-transition-duration")
+    );
+    AppState.loaderAnimationEndTimeout = window.setTimeout(() => {
+      setLoaderState("hidden");
+      loaderWrapper.hidden = true;
+    }, duration * 2); // Make longer than css duration
   } catch {}
 }
 
@@ -635,11 +559,6 @@ export function showAdOverlay(): void {
     return;
   }
 
-  const loader = document.getElementById(LYRICS_LOADER_ID);
-  if (loader) {
-    loader.removeAttribute("active");
-  }
-
   let adOverlay = document.getElementById(LYRICS_AD_OVERLAY_ID);
   if (!adOverlay) {
     adOverlay = document.createElement("div");
@@ -663,79 +582,44 @@ export function hideAdOverlay(): void {
 }
 
 /**
- * Clears all lyrics content from the wrapper element.
- */
-function clearLyrics(): void {
-  try {
-    const lyricsWrapper = document.getElementById(LYRICS_WRAPPER_ID);
-    if (lyricsWrapper) {
-      lyricsWrapper.replaceChildren();
-    }
-  } catch {}
-}
-
-/**
- * Clears the dock when there are no lyrics to control.
- */
-export function showNoLyricsState(): void {
-  unmountDock();
-}
-
-/**
- * Injects the extension stylesheets (local files only).
+ * Injects the extension stylesheet (local file only).
  */
 export async function injectHeadTags(): Promise<void> {
-  const cssFiles = ["css/blyrics/index.css"];
-
-  for (const file of cssFiles) {
-    const id = `blyrics-style-${file.replace(/(\/index)?\.css$/, "")}`;
-    if (document.getElementById(id)) continue;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = chrome.runtime.getURL(file);
-    link.id = id;
-    document.head.appendChild(link);
-  }
+  const file = "css/blyrics/index.css";
+  const id = "blyrics-style-css/blyrics";
+  if (document.getElementById(id)) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = chrome.runtime.getURL(file);
+  link.id = id;
+  document.head.appendChild(link);
 }
 
 /**
  * Cleans up this elements and resets state when switching songs.
  */
 export function cleanup(): void {
-  // The side panel's view only, even though on Chromium the floating window's is in the same
-  // registry: clearing it from here would go around its own renderer and leave the container it
-  // built standing in the floating document. It drops the song off the publish this function ends
-  // with instead.
   mainView.clear();
 
-  if (lyricsObserver) {
-    lyricsObserver.disconnect();
-    lyricsObserver = null;
-  }
-
   AppState.lyricData = null;
-  AppState.parsedLyrics = null;
-  AppState.lyricDecorations = {};
 
   restoreNativeLyricsFocus();
 
-  const blyricsFooter = document.getElementsByClassName(FOOTER_CLASS)[0];
-
-  if (blyricsFooter) {
-    blyricsFooter.remove();
-  }
+  document.getElementsByClassName(FOOTER_CLASS)[0]?.remove();
 
   // The dock persists across re-injections (updated in place by addFooter) so a
   // provider switch or toggle never tears it out of the DOM. It is removed only when
-  // there are no lyrics (showNoLyricsState).
+  // there are no lyrics (injectLyrics).
   getResumeScrollElement().setAttribute("autoscroll-hidden", "true");
 
-  clearLyrics();
+  document.getElementById(LYRICS_WRAPPER_ID)?.replaceChildren();
 }
 
-let footerResize: ObserverHandle | null = null;
+let footerResize: ResizeObserver | null = null;
 
+// Re-measures the lines and re-ticks whenever the footer's size changes.
 function observeFooterForRecalc(footer: HTMLElement): void {
-  footerResize?.destroy();
-  footerResize = observeResize([footer], lyricsElementAdded);
+  footerResize?.disconnect();
+  footerResize = new ResizeObserver(() => lyricsElementAdded());
+  footerResize.observe(footer);
 }

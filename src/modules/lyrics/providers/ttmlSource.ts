@@ -1,53 +1,34 @@
 import { parseTTMLContent } from "@braccato/parsers";
-import type { LyricSourceKey, LyricSourceResult, ProviderParameters } from "@modules/lyrics/providers/shared";
+import type { LyricSourceResult, ProviderParameters } from "@modules/lyrics/providers/shared";
 
-interface FillTtmlOptions {
-  richsyncKey: LyricSourceKey;
-  syncedKey: LyricSourceKey;
-  source: string;
-  cacheAllowed?: boolean;
-}
+const RICHSYNC_KEY = "bLyrics-richsynced";
+const SYNCED_KEY = "bLyrics-synced";
 
-export function fillTtml(
-  responseString: string,
-  providerParameters: ProviderParameters,
-  options: FillTtmlOptions = {
-    richsyncKey: "bLyrics-richsynced",
-    syncedKey: "bLyrics-synced",
-    source: "Better Lyrics",
-    cacheAllowed: true,
-  }
-) {
-  const { richsyncKey, syncedKey, source, cacheAllowed } = options;
-
+/**
+ * Parses a Better Lyrics TTML body into the two Better Lyrics source slots: word-timed lyrics fill
+ * the richsync slot, line-timed lyrics the synced slot, and the other slot is recorded as a miss.
+ */
+export function fillTtml(responseString: string, providerParameters: ProviderParameters): void {
+  const { sourceMap } = providerParameters;
   const { lyrics, isWordSynced, language } = parseTTMLContent(responseString, {
     songDurationMs: providerParameters.duration * 1000,
   });
 
   if (lyrics.length === 0) {
-    providerParameters.sourceMap[richsyncKey].lyricSourceResult = null;
-    providerParameters.sourceMap[richsyncKey].filled = true;
-    providerParameters.sourceMap[syncedKey].lyricSourceResult = null;
-    providerParameters.sourceMap[syncedKey].filled = true;
-    return;
-  }
-
-  const result: LyricSourceResult = {
-    cacheAllowed: cacheAllowed ?? true,
-    language,
-    lyrics,
-    musicVideoSynced: false,
-    source,
-  };
-
-  if (isWordSynced) {
-    providerParameters.sourceMap[richsyncKey].lyricSourceResult = result;
-    providerParameters.sourceMap[syncedKey].lyricSourceResult = null;
+    sourceMap[RICHSYNC_KEY].lyricSourceResult = null;
+    sourceMap[SYNCED_KEY].lyricSourceResult = null;
   } else {
-    providerParameters.sourceMap[richsyncKey].lyricSourceResult = null;
-    providerParameters.sourceMap[syncedKey].lyricSourceResult = result;
+    const result: LyricSourceResult = {
+      cacheAllowed: true,
+      language,
+      lyrics,
+      musicVideoSynced: false,
+      source: "Better Lyrics",
+    };
+    sourceMap[RICHSYNC_KEY].lyricSourceResult = isWordSynced ? result : null;
+    sourceMap[SYNCED_KEY].lyricSourceResult = isWordSynced ? null : result;
   }
 
-  providerParameters.sourceMap[syncedKey].filled = true;
-  providerParameters.sourceMap[richsyncKey].filled = true;
+  sourceMap[SYNCED_KEY].filled = true;
+  sourceMap[RICHSYNC_KEY].filled = true;
 }

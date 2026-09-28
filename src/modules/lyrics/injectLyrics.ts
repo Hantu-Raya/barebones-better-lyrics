@@ -3,45 +3,12 @@ import { AppState } from "@core/appState";
 import { t } from "@core/i18n";
 import { applySegmentMapToLyrics, type LyricSourceResultWithMeta } from "@modules/lyrics/lyrics";
 import { getTranslationFromCache, translateBatch } from "@modules/lyrics/translation";
-import { addFooter, cleanup, createLyricsWrapper, flushLoader, renderLoader, showNoLyricsState } from "@modules/ui/dom";
+import { addFooter, cleanup, createLyricsWrapper, flushLoader, unmountDock } from "@modules/ui/dom";
 import { lyricsElementAdded, mainView } from "@modules/ui/mainLyricsView";
 import { disableNativeLyricsFocus } from "@modules/ui/nativeLyricsFocus";
-import { injectTranslation, type LineData } from "@braccato/core";
+import { injectTranslation, type LineData, type LyricSyncType } from "@braccato/core";
 import { containsNonLatin, detectNonLatinLanguage } from "@braccato/core/text";
 import { langCodesMatch, languageMatchesAny } from "@utils";
-
-export type { LineData };
-
-/**
- * What the translation pass puts on one line. It inject straight into the main
- * view's elements and write nothing back to the `Lyric` objects, so a second view building from the
- * same lines would otherwise show neither.
- */
-interface LyricLineDecoration {
-  translation?: string;
-  translationLanguage?: string;
-}
-
-/**
- * Keyed by the line's index in the lyrics array, which is the only handle a view that built its own
- * elements has on the line these belong to.
- */
-export type LyricDecorations = Record<number, LyricLineDecoration>;
-
-function recordLyricDecoration(index: number, decoration: LyricLineDecoration): void {
-  AppState.lyricDecorations[index] = { ...AppState.lyricDecorations[index], ...decoration };
-}
-
-function updateLyricLanguage(language: string): void {
-  if (AppState.lyricData) AppState.lyricData.language = language;
-  mainView.setLanguage(language);
-}
-
-function isTranslationDisabledForLang(lang: string): boolean {
-  return languageMatchesAny(lang, AppState.translationDisabledLanguages);
-}
-
-export type SyncType = "richsync" | "synced" | "none";
 
 /**
  * What the current song's lyrics are, independent of any view that renders them. The render
@@ -49,30 +16,19 @@ export type SyncType = "richsync" | "synced" | "none";
  * built them.
  */
 export interface LyricsData {
-  syncType: SyncType;
-  isMusicVideoSynced: boolean;
+  syncType: LyricSyncType;
   tabSelector: HTMLElement;
-  hasNonLatin: boolean;
-  language?: string | null;
 }
 
 /**
  * Processes lyrics data and prepares it for rendering.
- * Sets language settings, validates data, and initiates DOM injection.
+ * Validates data and initiates DOM injection.
  *
  * @param doc - Document the translation nodes are created in
  * @param data - Processed lyrics data
- * @param keepLoaderVisible
  * @param signal - AbortSignal to cancel async operations
- * @param data.language - Language code for the lyrics
- * @param data.lyrics - Array of lyric lines
  */
-export function processLyrics(
-  doc: Document,
-  data: LyricSourceResultWithMeta,
-  keepLoaderVisible = false,
-  signal?: AbortSignal
-): void {
+export function processLyrics(doc: Document, data: LyricSourceResultWithMeta, signal?: AbortSignal): void {
   const lyrics = data.lyrics;
   if (!lyrics || lyrics.length === 0) {
     throw new Error(NO_LYRICS_FOUND_LOG);
@@ -83,7 +39,7 @@ export function processLyrics(
   // there is nothing on screen to clear.
   mainView.clearOnScreenLyrics();
 
-  injectLyrics(doc, data, keepLoaderVisible, signal);
+  injectLyrics(doc, data, signal);
 }
 
 /**
@@ -92,17 +48,9 @@ export function processLyrics(
  *
  * @param doc - Document the translation nodes are created in
  * @param data - Complete lyrics data object
- * @param keepLoaderVisible
  * @param signal - AbortSignal to cancel async operations
- * @param data.lyrics - Array of lyric lines with timing
- * @param [data.source] - Source attribution for lyrics
  */
-function injectLyrics(
-  doc: Document,
-  data: LyricSourceResultWithMeta,
-  keepLoaderVisible = false,
-  signal?: AbortSignal
-): void {
+function injectLyrics(doc: Document, data: LyricSourceResultWithMeta, signal?: AbortSignal): void {
   const injectionId = AppState.currentInjectionId;
   const isStale = () => AppState.currentInjectionId !== injectionId;
 
@@ -113,49 +61,35 @@ function injectLyrics(
   const lyricsWrapper = createLyricsWrapper();
   lyricsWrapper.removeAttribute("is-empty");
 
-
-  const allZero = lyrics.every(item => item.startTimeMs === 0);
   const noLyrics = lyrics[0].words === t("lyrics_notFound");
 
-  if (keepLoaderVisible) {
-    renderLoader(true);
-  } else {
-    flushLoader(allZero && !noLyrics);
-  }
+  flushLoader();
 
   mainView.setLyrics(lyrics, {
     mount: lyricsWrapper,
-    loaderVisible: keepLoaderVisible,
+    loaderVisible: false,
     noLyrics,
     language: data.language,
   });
 
-  const syncType: SyncType = mainView.syncType;
   const lines: readonly LineData[] = mainView.lines;
 
   const tabSelector = document.getElementsByClassName(TAB_HEADER_CLASS)[1] as HTMLElement;
 
-  const lyricsData: LyricsData = {
-    syncType: syncType,
-    language: data.language,
-    isMusicVideoSynced: data.musicVideoSynced === true,
-    tabSelector,
-    hasNonLatin: lyrics.some(item => !!item.words && containsNonLatin(item.words)),
-  };
-
   // Set before addFooter so the dock controls read the current song's lyric data.
-  AppState.lyricData = lyricsData;
+  AppState.lyricData = { syncType: mainView.syncType, tabSelector };
 
-  if (!noLyrics) {
-    addFooter(data.source, data.providerKey);
+  // The placeholder carries no provider: there is nothing to attribute and nothing for the dock to control.
+  if (data.providerKey) {
+    addFooter(data.providerKey);
   } else {
-    showNoLyricsState();
+    unmountDock();
   }
 
   void processBatchTranslations(doc, data, lines, isStale, signal);
 
   if (data.segmentMap) {
-    applySegmentMapToLyrics(lyricsData, lines, data.segmentMap);
+    applySegmentMapToLyrics(lines, data.segmentMap);
   }
 
   AppState.areLyricsTicking = true;
@@ -196,7 +130,8 @@ async function processBatchTranslations(
       sourceLanguage && scriptLanguage && !langCodesMatch(sourceLanguage, scriptLanguage) ? undefined : sourceLanguage;
 
     // --- Translation ---
-    const isSourceLangDisabled = !!trustedLanguage && isTranslationDisabledForLang(trustedLanguage);
+    const isSourceLangDisabled =
+      !!trustedLanguage && languageMatchesAny(trustedLanguage, AppState.translationDisabledLanguages);
 
     if (isTranslateEnabled && !isSourceLangDisabled) {
       let translationResult: string | null = null;
@@ -217,7 +152,6 @@ async function processBatchTranslations(
 
       if (translationResult && !isSameText(translationResult, item.words)) {
         injectTranslation(doc, lyricElement, translationResult, translationLanguage);
-        recordLyricDecoration(index, { translation: translationResult, translationLanguage });
         didInjectCachedContent = true;
       } else if (sourceLanguage !== targetTranslationLang || containsNonLatin(item.words) || !sourceLanguage) {
         translationBatch.push({ index, text: item.words });
@@ -232,41 +166,29 @@ async function processBatchTranslations(
   if (isStale()) return;
 
   // 2. Perform Batch Requests
-  const promises: Promise<void>[] = [];
-
   if (translationBatch.length > 0) {
-    promises.push(
-      (async () => {
-        const response = await translateBatch({
-          lines: translationBatch.map(b => b.text),
-          targetLanguage: targetTranslationLang,
-          signal,
-        });
-        if (isStale()) return;
+    const response = await translateBatch({
+      lines: translationBatch.map(b => b.text),
+      targetLanguage: targetTranslationLang,
+      signal,
+    });
+    if (isStale()) return;
 
-        if (!sourceLanguage && response.detectedLanguage) {
-          sourceLanguage = response.detectedLanguage;
-          updateLyricLanguage(sourceLanguage);
-        }
+    if (!sourceLanguage && response.detectedLanguage) {
+      sourceLanguage = response.detectedLanguage;
+      mainView.setLanguage(sourceLanguage);
+    }
 
-        if (isTranslationDisabledForLang(sourceLanguage || "")) return;
+    if (languageMatchesAny(sourceLanguage || "", AppState.translationDisabledLanguages)) return;
 
-        response.results.forEach((result, i) => {
-          if (result) {
-            const originalIndex = translationBatch[i].index;
-            injectTranslation(doc, linesData[originalIndex].lyricElement, result.translatedText, targetTranslationLang);
-            recordLyricDecoration(originalIndex, {
-              translation: result.translatedText,
-              translationLanguage: targetTranslationLang,
-            });
-          }
-        });
-        lyricsElementAdded();
-      })()
-    );
+    response.results.forEach((result, i) => {
+      if (result) {
+        const originalIndex = translationBatch[i].index;
+        injectTranslation(doc, linesData[originalIndex].lyricElement, result.translatedText, targetTranslationLang);
+      }
+    });
+    lyricsElementAdded();
   }
-
-  await Promise.all(promises);
 }
 
 /**

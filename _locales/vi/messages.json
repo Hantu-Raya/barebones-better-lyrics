@@ -79,14 +79,6 @@
     "message": "Better Lyrics đang tìm lời bài hát...",
     "description": "Loading message while searching for lyrics"
   },
-  "lyrics_stillSearching": {
-    "message": "Vẫn đang tìm lời bài hát được đồng bộ...",
-    "description": "Loading message while still searching"
-  },
-  "lyrics_noSyncedLyrics": {
-    "message": "Better Lyrics không thể tìm lời bài hát được đồng bộ",
-    "description": "Message when no synced lyrics found"
-  },
   "lyrics_adPlaying": {
     "message": "[Dế kêu...]",
     "description": "Message shown during ad playback"

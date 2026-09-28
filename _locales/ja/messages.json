@@ -79,14 +79,6 @@
     "message": "Better Lyricsが歌詞を検索中...",
     "description": "Loading message while searching for lyrics"
   },
-  "lyrics_stillSearching": {
-    "message": "同期歌詞を検索中...",
-    "description": "Loading message while still searching"
-  },
-  "lyrics_noSyncedLyrics": {
-    "message": "Better Lyricsは同期歌詞を見つけられませんでした",
-    "description": "Message when no synced lyrics found"
-  },
   "lyrics_adPlaying": {
     "message": "[エレベーターミュージック]",
     "description": "Message shown during ad playback"

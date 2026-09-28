@@ -79,14 +79,6 @@
     "message": "Better Lyrics szuka tesktu piosenki...",
     "description": "Loading message while searching for lyrics"
   },
-  "lyrics_stillSearching": {
-    "message": "Nadal wyszukiwanie zsynchronizowanych tekstów...",
-    "description": "Loading message while still searching"
-  },
-  "lyrics_noSyncedLyrics": {
-    "message": "Better Lyrics nie mógł znaleźć zsynchronizowanych tekstów",
-    "description": "Message when no synced lyrics found"
-  },
   "lyrics_adPlaying": {
     "message": "[lalalalala...]",
     "description": "Message shown during ad playback"

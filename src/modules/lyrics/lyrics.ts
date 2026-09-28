@@ -6,16 +6,16 @@
 import { SEEK_EVENT, TAB_HEADER_CLASS } from "@constants";
 import { AppState, type PlayerDetails } from "@core/appState";
 import { t } from "@core/i18n";
-import { type LineData, type LyricsData, processLyrics } from "@modules/lyrics/injectLyrics";
+import { processLyrics } from "@modules/lyrics/injectLyrics";
 import { stringSimilarity } from "@modules/lyrics/lyricParseUtils";
 import { flushLoader, refreshDockSources, renderLoader } from "@modules/ui/dom";
-import type { Lyric, LyricSourceResult, ProviderParameters, SourceMapType } from "./providers/shared";
+import type { Lyric, LyricSourceKey, LyricSourceResult, ProviderParameters, SourceMapType } from "./providers/shared";
 import { getLyrics, newSourceMap, providerPriority } from "./providers/shared";
 import type { YTLyricSourceResult } from "./providers/yt";
 import { getSongAlbum, getSongMetadata, type SegmentMap } from "./requestSniffer/requestSniffer";
 import { clearCache as clearTranslationCache } from "./translation";
 import { mainView } from "@modules/ui/mainLyricsView";
-import { resetPlaybackClock, resumeAllAutoscroll } from "@braccato/core";
+import { type LineData, resetPlaybackClock, resumeAllAutoscroll } from "@braccato/core";
 
 export function seekPlayer(timeS: number): void {
   document.dispatchEvent(new CustomEvent(SEEK_EVENT, { detail: timeS }));
@@ -33,48 +33,19 @@ function normalizeArtist(artist: string): string {
 
 export type LyricSourceResultWithMeta = LyricSourceResult & {
   segmentMap: SegmentMap | null;
-  providerKey?: string;
+  /** Unset only for the "not found" placeholder. */
+  providerKey?: LyricSourceKey;
 };
 
 /**
- * What a view needs to build its own lyric DOM from scratch: the parsed lines, the language the
- * translation pass keys off, and the timing context. The attribution and dock
- * fields of {@link LyricSourceResultWithMeta} stay out; those are host chrome, not lyrics.
- */
-export interface ParsedLyrics {
-  lyrics: Lyric[];
-  language?: string | null;
-  musicVideoSynced?: boolean | null;
-  segmentMap: SegmentMap | null;
-}
-
-/**
- * Holds onto the parsed lyrics after injection has consumed them, so a second view can build from
- * the same lines. Runs after {@link processLyrics} because injection calls cleanup(), which clears
- * this alongside the render records. That ordering is also why the floating window is told from
- * here rather than from injectLyrics: the lines it builds from do not exist until now.
- */
-function retainParsedLyrics(data: LyricSourceResultWithMeta): void {
-  if (!data.lyrics) return;
-
-  AppState.parsedLyrics = {
-    lyrics: data.lyrics,
-    language: data.language,
-    musicVideoSynced: data.musicVideoSynced,
-    segmentMap: data.segmentMap,
-  };
-}
-
-/**
  * How far a time recorded against the counterpart video moves when the same song is played back as
- * its other version. Pure, so a view that renders the lyrics somewhere other than the side panel can
- * shift a copy of them instead of the records the side panel is animating.
+ * its other version.
  *
  * @param segmentMap - Segment map pairing the two versions of the song
  * @param timeMs - Time on the counterpart video's timeline, in milliseconds
  * @returns The shift to add, in milliseconds
  */
-export function getSegmentMapTimeShiftMs(segmentMap: SegmentMap, timeMs: number): number {
+function getSegmentMapTimeShiftMs(segmentMap: SegmentMap, timeMs: number): number {
   let lastTimeChange = 0;
   for (let segment of segmentMap.segment) {
     if (timeMs >= segment.counterpartVideoStartTimeMilliseconds) {
@@ -87,29 +58,20 @@ export function getSegmentMapTimeShiftMs(segmentMap: SegmentMap, timeMs: number)
   return lastTimeChange;
 }
 
-export function applySegmentMapToLyrics(
-  lyricData: LyricsData | null,
-  lines: readonly LineData[],
-  segmentMap: SegmentMap
-) {
-  if (segmentMap && lyricData) {
-    lyricData.isMusicVideoSynced = !lyricData.isMusicVideoSynced;
-    // We're sync lyrics using segment map
-    const allZero = lyricData.syncType === "none";
+/** Shifts the on-screen lines onto the other version's timeline. Untimed lines have nothing to shift. */
+export function applySegmentMapToLyrics(lines: readonly LineData[], segmentMap: SegmentMap): void {
+  if (mainView.syncType === "none") return;
 
-    if (!allZero) {
-      for (let lyric of lines) {
-        lyric.accumulatedOffsetMs = 1000000; // Force resync by setting to a very large value
+  for (const lyric of lines) {
+    lyric.accumulatedOffsetMs = 1000000; // Force resync by setting to a very large value
 
-        let changeS = getSegmentMapTimeShiftMs(segmentMap, lyric.time * 1000) / 1000;
-        lyric.time = lyric.time + changeS;
-        lyric.lyricElement.dataset.time = String(lyric.time);
-        lyric.parts.forEach(part => {
-          part.time = part.time + changeS;
-          part.lyricElement.dataset.time = String(part.time);
-        });
-      }
-    }
+    const changeS = getSegmentMapTimeShiftMs(segmentMap, lyric.time * 1000) / 1000;
+    lyric.time = lyric.time + changeS;
+    lyric.lyricElement.dataset.time = String(lyric.time);
+    lyric.parts.forEach(part => {
+      part.time = part.time + changeS;
+      part.lyricElement.dataset.time = String(part.time);
+    });
   }
 }
 
@@ -176,7 +138,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
     const isSoftReload = AppState.lastLoadedVideoId === videoId && AppState.lyricData != null;
 
     if (isAVSwitch && segmentMap) {
-      applySegmentMapToLyrics(AppState.lyricData, mainView.lines, segmentMap);
+      applySegmentMapToLyrics(mainView.lines, segmentMap);
       AppState.suppressZeroTime = Date.now() + 5000;
       AppState.areLyricsTicking = true; // Keep lyrics ticking while new lyrics are fetched.
     } else if (isSoftReload) {
@@ -244,7 +206,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
     // match check for other sources and as the last timed source; plain text is never shown.
     const ytLyricsPromise = getLyrics(providerParameters, "yt-lyrics");
 
-    let selectedProvider: string | undefined;
+    let selectedProvider: LyricSourceKey | undefined;
 
     const pinnedProvider = AppState.manualProviderKey;
     const orderedProviders =
@@ -252,7 +214,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
         ? [pinnedProvider, ...providerPriority.filter(provider => provider !== pinnedProvider)]
         : providerPriority;
 
-    for (let provider of orderedProviders) {
+    for (const provider of orderedProviders) {
       if (signal.aborted) {
         return;
       }
@@ -319,8 +281,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
     if (signal.aborted) {
       return;
     }
-    processLyrics(document, lyricsWithMeta, false, signal);
-    retainParsedLyrics(lyricsWithMeta);
+    processLyrics(document, lyricsWithMeta, signal);
     shouldCleanupLoader = false;
     void completeSourceProbe(providerParameters, signal);
   } finally {

@@ -1,13 +1,13 @@
-import {
-  LYRICS_CACHE_TTL_MS,
-  LYRICS_NEGATIVE_CACHE_TTL_MS,
-  PROVIDER_CONFIGS,
-} from "@constants";
+import { LYRIC_SOURCE_KEYS, LYRICS_CACHE_TTL_MS, LYRICS_NEGATIVE_CACHE_TTL_MS } from "@constants";
 import { getTransientStorage, setTransientStorage } from "@core/storage";
+import type { Lyric } from "@braccato/core";
 import betterLyricsApi from "./betterLyricsApi";
 import lrclib from "./lrclib";
 import ytLyrics, { type YTLyricSourceResult } from "./yt";
-import { logCore } from "@core/logger";
+
+/** The line shape the parsers emit and the renderer consumes. */
+export type { Lyric };
+
 /** Current version of the lyrics cache format */
 const LYRIC_CACHE_VERSION = "2.1.0";
 
@@ -26,28 +26,6 @@ export interface LyricSourceResult {
   cacheAllowed?: boolean;
 }
 
-export type LyricsArray = Lyric[];
-
-export interface Lyric {
-  startTimeMs: number;
-  words: string;
-  durationMs: number;
-  key?: string;
-  parts?: LyricPart[];
-  agent?: string;
-  translations?: { [lang: string]: string };
-  translation?: { text: string; lang: string }; // old property
-  isInstrumental?: boolean;
-}
-
-export interface LyricPart {
-  startTimeMs: number;
-  words: string;
-  durationMs: number;
-  isBackground?: boolean;
-  explicit?: boolean;
-}
-
 export interface ProviderParameters {
   song: string;
   artist: string;
@@ -63,9 +41,7 @@ export type SourceMapType = {
 };
 
 /** Fixed source order: Better Lyrics API, then LRCLIB, then YouTube Music's own lyrics. */
-export const providerPriority: readonly LyricSourceKey[] = [...PROVIDER_CONFIGS]
-  .sort((a, b) => a.priority - b.priority)
-  .map(p => p.key as LyricSourceKey);
+export const providerPriority: readonly LyricSourceKey[] = LYRIC_SOURCE_KEYS;
 
 // Source #1 fills both Better Lyrics keys from one response; source #2 is LRCLIB; the last is
 // YouTube Music's own lyrics, which only count when timed (see lyrics.ts).
@@ -93,7 +69,7 @@ export function newSourceMap(): SourceMapType {
   }));
 }
 
-export async function saveLyricsToCache(providerParameters: ProviderParameters, provider: LyricSourceKey) {
+async function saveLyricsToCache(providerParameters: ProviderParameters, provider: LyricSourceKey): Promise<void> {
   let source = providerParameters.sourceMap[provider];
   if (source.filled && !source.resultCached && !source.lyricSourceResult) {
     source.resultCached = true;

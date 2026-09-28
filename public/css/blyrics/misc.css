@@ -1,8 +1,7 @@
 /* The extension loads these families from Google Fonts. Declared on lyric text only, never on the
    host page's :root. */
 .blyrics--line,
-.blyrics--translated,
-.blyrics--romanized {
+.blyrics--translated {
 	--noto-sans-cjk: "Noto Sans HK", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", "Noto Sans TC";
 	--noto-sans-universal:
 		"Noto Sans", var(--noto-sans-cjk), "Noto Sans Arabic", "Noto Sans Armenian",
@@ -48,18 +47,3 @@
 	display: none !important;
 }
 
-/* Miscellaneous styles */
-.blyrics--error {
-	align-self: flex-start !important;
-	color: var(--blyrics-error-color);
-	cursor: default;
-	font-family: var(--blyrics-font-family, var(--blyrics-default-font-family));
-	font-size: var(--blyrics-font-size);
-	font-weight: var(--blyrics-font-weight);
-	line-height: 1;
-	margin-block: var(--blyrics-margin) !important;
-	opacity: var(--blyrics-error-opacity);
-	padding-bottom: var(--blyrics-padding) !important;
-	padding-top: var(--blyrics-padding) !important;
-	word-break: break-word;
-}

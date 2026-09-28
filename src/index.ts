@@ -1,19 +1,15 @@
 import { injectI18nCssVars, loadLocaleOverride, subscribeToLocaleChanges } from "@core/i18n";
 import { purgeExpiredKeys, saveCacheInfo } from "@core/storage";
 import { setupRequestSniffer } from "@modules/lyrics/requestSniffer/requestSniffer";
+import { listenForSettingsChanges, loadLyricOffsetSettings, loadTranslationSettings } from "@modules/settings/settings";
 import {
-  listenForSettingsChanges,
-  loadLyricOffsetSettings,
-  loadPassiveScrollSetting,
-  loadTranslationSettings,
-} from "@modules/settings/settings";
-import { cleanup as cleanupLyrics, injectHeadTags, observeLyricsPageType, setupAdObserver, unmountDock } from "@modules/ui/dom";
-import {
-  enableLyricsTab,
-  initializeLyrics,
-  lyricReloader,
-  setupAltHoverHandler,
-} from "@modules/ui/observer";
+  cleanup as cleanupLyrics,
+  injectHeadTags,
+  observeLyricsPageType,
+  setupAdObserver,
+  unmountDock,
+} from "@modules/ui/dom";
+import { enableLyricsTab, initializeLyrics, lyricReloader, setupAltHoverHandler } from "@modules/ui/observer";
 
 /**
  * Initializes the extension: local styles, locale, observers, settings and storage.
@@ -30,7 +26,6 @@ async function modify(isDisposed: () => boolean): Promise<void> {
   observeLyricsPageType();
   loadTranslationSettings();
   loadLyricOffsetSettings();
-  loadPassiveScrollSetting();
   await purgeExpiredKeys();
   await saveCacheInfo();
   listenForSettingsChanges();

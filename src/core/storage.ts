@@ -1,31 +1,6 @@
 import { LYRIC_SOURCE_KEYS, OFFSET_STORAGE_PREFIX } from "@constants";
 import { compressString, decompressString, isCompressed } from "./compression";
 
-/**
- * Keys that should NEVER be deleted by clearCache or any bulk delete operation.
- * These keys contain critical user data that must persist across cache clears.
- */
-export const PROTECTED_STORAGE_KEYS = [
-  "userIdentity",
-  "identityRegistered",
-  "userThemeRatings",
-  "keyCertificate",
-] as const;
-
-/**
- * Typed wrapper for chrome.storage.local.get that casts results to expected type.
- */
-export async function getLocalStorage<T>(keys: string | string[] | null): Promise<T> {
-  return (await chrome.storage.local.get(keys as string[])) as unknown as T;
-}
-
-/**
- * Typed wrapper for chrome.storage.sync.get that casts results to expected type.
- */
-export async function getSyncStorage<T>(keys: string | string[] | null): Promise<T> {
-  return (await chrome.storage.sync.get(keys as string[])) as unknown as T;
-}
-
 interface TransientStorageItem {
   type: "transient";
   value: any;
@@ -33,7 +8,7 @@ interface TransientStorageItem {
 }
 
 /**
- * Cross-browser storage getter that works with both Chrome and Firefox.
+ * Reads settings from sync storage.
  *
  * @param {Object|string} key - Storage key or object with default values
  * @param {Function} callback - Callback function to handle the retrieved data
@@ -46,7 +21,7 @@ export function getStorage(
 }
 
 /**
- * Cross-browser storage setter that works with both Chrome and Firefox.
+ * Writes settings to sync storage.
  *
  * @param {Object} items - Key/value pairs to persist
  */
@@ -54,7 +29,7 @@ export function setStorage(items: { [key: string]: any }): void {
   chrome.storage.sync.set(items);
 }
 
-export async function peekTransientStorage(key: string): Promise<{ value: any; expired: boolean } | null> {
+async function peekTransientStorage(key: string): Promise<{ value: any; expired: boolean } | null> {
   try {
     const result = await chrome.storage.local.get(key);
     const item = result[key] as TransientStorageItem | undefined;
@@ -178,16 +153,12 @@ export async function saveCacheInfo(): Promise<void> {
 }
 
 /**
- * Clears all cached lyrics data from local storage.
- * Only removes keys with "blyrics_" prefix and explicitly excludes PROTECTED_STORAGE_KEYS.
+ * Clears all cached lyrics data ("blyrics_" keys) from local storage.
  */
 export async function clearCache(): Promise<void> {
   try {
     const result = await chrome.storage.local.get(null);
-    const lyricsKeys = Object.keys(result).filter(
-      key =>
-        key.startsWith("blyrics_") && !PROTECTED_STORAGE_KEYS.includes(key as (typeof PROTECTED_STORAGE_KEYS)[number])
-    );
+    const lyricsKeys = Object.keys(result).filter(key => key.startsWith("blyrics_"));
     await chrome.storage.local.remove(lyricsKeys);
     await saveCacheInfo();
   } catch {}
@@ -198,9 +169,7 @@ export async function clearSongCache(videoId: string): Promise<void> {
   try {
     const prefix = `blyrics_${videoId}_`;
     const result = await chrome.storage.local.get(null);
-    const songKeys = Object.keys(result).filter(
-      key => key.startsWith(prefix) && !PROTECTED_STORAGE_KEYS.includes(key as (typeof PROTECTED_STORAGE_KEYS)[number])
-    );
+    const songKeys = Object.keys(result).filter(key => key.startsWith(prefix));
     await chrome.storage.local.remove(songKeys);
     await saveCacheInfo();
   } catch {}

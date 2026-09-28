@@ -1,4 +1,4 @@
-import { DOCK_CLASS, DOCK_CONTROL_ORDER_DEFAULT, PROVIDER_CONFIGS } from "@constants";
+import { DOCK_CLASS, PROVIDER_CONFIGS } from "@constants";
 import { AppState, refreshCurrentSong, reloadLyrics } from "@core/appState";
 import { attachHoldRepeat } from "@core/holdRepeat";
 import { t } from "@core/i18n";
@@ -43,14 +43,13 @@ export function closeSourceMenu(): void {
   }
 }
 
+// The dock sits bottom-right, so the menu opens upward from the trigger.
 function positionSourceMenu(menu: HTMLElement, trigger: HTMLElement): void {
   const rect = trigger.getBoundingClientRect();
-  const opensDown = (trigger.closest(`.${DOCK_CLASS}`)?.getAttribute("data-position") ?? "").startsWith("top");
   // Clamp within the viewport so a menu near the right edge doesn't overflow off-screen.
   const maxLeft = window.innerWidth - menu.offsetWidth - 8;
   menu.style.left = `${Math.min(Math.max(8, rect.left - 4), Math.max(8, maxLeft))}px`;
-  menu.style.top = opensDown ? `${rect.bottom + 8}px` : "";
-  menu.style.bottom = opensDown ? "" : `${window.innerHeight - rect.top + 8}px`;
+  menu.style.bottom = `${window.innerHeight - rect.top + 8}px`;
 }
 
 function showDockMenu(trigger: HTMLElement, menu: HTMLElement): void {
@@ -438,16 +437,20 @@ function buildOffsetRowStep(icon: string, label: string, onClick: (event: MouseE
   return btn;
 }
 
-// The dock is fixed: every control is built on demand and only when it can act.
-const controlBuilders: Record<string, () => HTMLElement | null> = {
-  source: () => buildSourceSlot(),
-  translate: () =>
-    hasLyrics()
-      ? buildToggle(controlIcons.translate, AppState.isTranslateEnabled, t("options_translation_tab"), toggleTranslate)
-      : null,
-  offset: () => (isSynced() ? buildOffsetControl() : null),
-  refresh: () => (hasLyrics() ? buildRefreshControl() : null),
-};
+// The dock is fixed: every control is built on demand, in this order, and only when it can act.
+const controlBuilders: readonly (readonly [key: string, build: () => HTMLElement | null])[] = [
+  ["source", buildSourceSlot],
+  [
+    "translate",
+    () => {
+      if (!hasLyrics()) return null;
+      const label = t("options_translation_tab");
+      return buildToggle(controlIcons.translate, AppState.isTranslateEnabled, label, toggleTranslate);
+    },
+  ],
+  ["offset", () => (isSynced() ? buildOffsetControl() : null)],
+  ["refresh", () => (hasLyrics() ? buildRefreshControl() : null)],
+];
 
 function buildDivider(): HTMLElement {
   const divider = document.createElement("span");
@@ -468,8 +471,8 @@ export function buildControlsSegment(): HTMLElement {
   const sections: HTMLElement[] = [];
   const shape: string[] = [];
 
-  for (const key of DOCK_CONTROL_ORDER_DEFAULT) {
-    const section = controlBuilders[key]?.();
+  for (const [key, build] of controlBuilders) {
+    const section = build();
     if (section) {
       sections.push(section);
       shape.push(key);

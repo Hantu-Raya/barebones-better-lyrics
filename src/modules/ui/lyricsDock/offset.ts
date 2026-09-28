@@ -8,10 +8,6 @@ export const OFFSET_STEP_LARGE = 0.5;
 
 const OFFSET_PERSIST_DELAY = 400;
 
-function renderOffsetChange(): void {
-  retickMainView();
-}
-
 function offsetKey(videoId: string, source: string): string {
   return `${OFFSET_STORAGE_PREFIX}${videoId}_${source}`;
 }
@@ -23,7 +19,7 @@ function round1(value: number): number {
 function applyLyricOffset(value: number): void {
   AppState.lyricOffset = round1(value);
   refreshOffsetIndicator();
-  renderOffsetChange();
+  retickMainView();
 }
 
 // Global + per-sync-type trims are user settings persisted to chrome.storage.sync; they stack
@@ -59,7 +55,7 @@ function notifyGlobalOffset(key: GlobalOffsetKey): void {
 
 export function setGlobalOffsetValue(key: GlobalOffsetKey, value: number): number {
   AppState[key] = round1(value);
-  renderOffsetChange();
+  retickMainView();
   notifyGlobalOffset(key);
   persistGlobalOffsets();
   return AppState[key];
@@ -76,7 +72,7 @@ export function applyGlobalOffsets(values: Record<GlobalOffsetKey, number>): voi
     AppState[key] = round1(values[key]);
     notifyGlobalOffset(key);
   }
-  renderOffsetChange();
+  retickMainView();
 }
 
 export function resetGlobalOffsets(): void {
@@ -84,7 +80,7 @@ export function resetGlobalOffsets(): void {
     AppState[key] = 0;
     notifyGlobalOffset(key);
   }
-  renderOffsetChange();
+  retickMainView();
   persistGlobalOffsets();
 }
 
