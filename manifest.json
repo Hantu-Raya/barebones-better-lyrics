@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "2.4.1.1",
+  "version": "2.4.1.2",
   "default_locale": "en",
   "name": "Barebones Better Lyrics",
   "description": "__MSG_extensionDescription__",

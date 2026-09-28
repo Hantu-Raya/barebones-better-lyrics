@@ -35,7 +35,7 @@ export const TRANSLATE_LYRICS_URL = function (lang: string, text: string): strin
 export const BETTER_LYRICS_API_URL = "https://api.betterlyrics.org/getLyrics" as const;
 export const LRCLIB_API_URL = "https://lrclib.net/api/get" as const;
 export const LRCLIB_CLIENT_HEADER =
-  "Barebones Better Lyrics 2.4.1.1 (https://github.com/Hantu-Raya/barebones-better-lyrics)" as const;
+  "Barebones Better Lyrics 2.4.1.2 (https://github.com/Hantu-Raya/barebones-better-lyrics)" as const;
 export const PROVIDER_TIMEOUT_MS = 20_000;
 
 // Log Prefixes
