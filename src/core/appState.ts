@@ -3,7 +3,6 @@ import { createLyrics, type ParsedLyrics } from "@modules/lyrics/lyrics";
 import type { LyricSourceKey } from "@modules/lyrics/providers/shared";
 import { flushLoader } from "@modules/ui/dom";
 import { clearSongCache } from "@core/storage";
-import { logError } from "@core/logger";
 
 export interface PlayerDetails {
   currentTime: number;
@@ -11,7 +10,6 @@ export interface PlayerDetails {
   song: string;
   artist: string;
   duration: string;
-  audioTrackData: any;
   browserTime: number;
   isPlaying: boolean;
   playing: boolean;
@@ -110,8 +108,7 @@ export function handleModifications(detail: PlayerDetails): void {
 
   AppState.currentInjectionId++;
   AppState.lyricAbortController = new AbortController();
-  AppState.lyricInjectionPromise = createLyrics(detail, AppState.lyricAbortController.signal).catch(err => {
-    logError(err);
+  AppState.lyricInjectionPromise = createLyrics(detail, AppState.lyricAbortController.signal).catch(() => {
     AppState.areLyricsLoaded = false;
     AppState.lyricInjectionFailed = true;
   });

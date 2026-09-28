@@ -17,7 +17,6 @@ export default async function ytLyrics(providerParameters: ProviderParameters): 
       lyrics: lyricsArray,
       text: lyricsText,
       source: sourceText,
-      sourceHref: "",
       musicVideoSynced: false,
       cacheAllowed: false,
     };

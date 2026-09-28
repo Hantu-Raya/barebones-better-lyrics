@@ -1,12 +1,10 @@
 import { parseTTMLContent } from "@braccato/parsers";
 import type { LyricSourceKey, LyricSourceResult, ProviderParameters } from "@modules/lyrics/providers/shared";
-import { logCore } from "@core/logger";
 
 interface FillTtmlOptions {
   richsyncKey: LyricSourceKey;
   syncedKey: LyricSourceKey;
   source: string;
-  sourceHref: string;
   cacheAllowed?: boolean;
 }
 
@@ -17,18 +15,16 @@ export function fillTtml(
     richsyncKey: "bLyrics-richsynced",
     syncedKey: "bLyrics-synced",
     source: "Better Lyrics",
-    sourceHref: "",
     cacheAllowed: true,
   }
 ) {
-  const { richsyncKey, syncedKey, source, sourceHref, cacheAllowed } = options;
+  const { richsyncKey, syncedKey, source, cacheAllowed } = options;
 
   const { lyrics, isWordSynced, language } = parseTTMLContent(responseString, {
     songDurationMs: providerParameters.duration * 1000,
   });
 
   if (lyrics.length === 0) {
-    logCore(`No timed lines parsed from ${source} TTML (${responseString.length} chars)`);
     providerParameters.sourceMap[richsyncKey].lyricSourceResult = null;
     providerParameters.sourceMap[richsyncKey].filled = true;
     providerParameters.sourceMap[syncedKey].lyricSourceResult = null;
@@ -42,7 +38,6 @@ export function fillTtml(
     lyrics,
     musicVideoSynced: false,
     source,
-    sourceHref,
   };
 
   if (isWordSynced) {

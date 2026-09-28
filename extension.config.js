@@ -48,6 +48,19 @@ const rendererStylesheets = () => {
   return stylesheets;
 };
 
+// The renderer declares its custom properties on :root, which would put them on YouTube Music's <html>.
+// Nativune never styles the host page, so they are re-declared on the fork's own top-level elements
+// instead (zero specificity, like the :root they replace, so later fork rules still win).
+const FORK_ROOTS =
+  ":where(#blyrics-wrapper, #blyrics-loader, #blyrics-ad-overlay, .blyrics-dock, .blyrics-dock__menu, #blyrics-autoscroll-resume-wrapper)";
+const scopeRootVariables = css => {
+  const count = css.match(/:root\b/g)?.length ?? 0;
+  if (count !== 2) {
+    throw new Error(`[BetterLyrics] expected 2 :root rules in @braccato/core variables.css, found ${count}; update scopeRootVariables`);
+  }
+  return Buffer.from(css.replace(/:root\b/g, FORK_ROOTS));
+};
+
 // Emitted from the emit hook rather than from a processAssets stage so the CSS minimizer leaves
 // them byte for byte as authored, which is how the copies under public/ arrive too.
 const emitRendererStyles = {
@@ -63,7 +76,7 @@ const emitRendererStyles = {
 
     compiler.hooks.emit.tap("EmitRendererStyles", compilation => {
       for (const { name, path } of rendererStylesheets()) {
-        const contents = readFileSync(path);
+        const contents = name === "variables.css" ? scopeRootVariables(readFileSync(path, "utf8")) : readFileSync(path);
         compilation.emitAsset(`${rendererStylesOutputDir}/${name}`, {
           source: () => contents,
           size: () => contents.length,

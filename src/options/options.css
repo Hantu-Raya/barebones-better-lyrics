@@ -251,3 +251,8 @@ input[aria-invalid="true"] {
 		transition: none !important;
 	}
 }
+
+/* Hide untranslated __MSG_*__ placeholders until i18n has applied the strings. */
+body:not(.i18n-ready) {
+	opacity: 0;
+}

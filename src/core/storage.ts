@@ -1,6 +1,5 @@
-import { LYRIC_SOURCE_KEYS, OFFSET_STORAGE_PREFIX, STORAGE_TRANSIENT_SET_LOG } from "@constants";
+import { LYRIC_SOURCE_KEYS, OFFSET_STORAGE_PREFIX } from "@constants";
 import { compressString, decompressString, isCompressed } from "./compression";
-import { logCore, logError } from "@core/logger";
 
 /**
  * Keys that should NEVER be deleted by clearCache or any bulk delete operation.
@@ -67,7 +66,6 @@ export async function peekTransientStorage(key: string): Promise<{ value: any; e
 
     return { value: decoded, expired: Boolean(expiry && Date.now() > expiry) };
   } catch (error) {
-    logError(error);
     return null;
   }
 }
@@ -80,9 +78,7 @@ export async function getTransientStorage(key: string): Promise<any | null> {
   if (item.expired) {
     try {
       await chrome.storage.local.remove(key);
-    } catch (error) {
-      logError(error);
-    }
+    } catch {}
     return null;
   }
 
@@ -109,11 +105,8 @@ export async function setTransientStorage(key: string, value: any, ttl: number):
         expiry,
       },
     });
-    logCore(STORAGE_TRANSIENT_SET_LOG, key);
     await saveCacheInfo();
-  } catch (error) {
-    logError(error);
-  }
+  } catch {}
 }
 
 /**
@@ -129,9 +122,7 @@ export async function setPersistentStorage(key: string, value: any): Promise<voi
     await chrome.storage.local.set({
       [key]: { type: "transient", value: storedValue, expiry: 0 },
     });
-  } catch (error) {
-    logError(error);
-  }
+  } catch {}
 }
 
 function extractVideoIdFromCacheKey(key: string): string | null {
@@ -174,7 +165,6 @@ async function getUpdatedCacheInfo(): Promise<{ count: number; size: number }> {
       size: totalSize,
     };
   } catch (error) {
-    logError(error);
     return { count: 0, size: 0 };
   }
 }
@@ -200,9 +190,7 @@ export async function clearCache(): Promise<void> {
     );
     await chrome.storage.local.remove(lyricsKeys);
     await saveCacheInfo();
-  } catch (error) {
-    logError(error);
-  }
+  } catch {}
 }
 
 export async function clearSongCache(videoId: string): Promise<void> {
@@ -215,9 +203,7 @@ export async function clearSongCache(videoId: string): Promise<void> {
     );
     await chrome.storage.local.remove(songKeys);
     await saveCacheInfo();
-  } catch (error) {
-    logError(error);
-  }
+  } catch {}
 }
 
 /**
@@ -242,9 +228,7 @@ export async function purgeExpiredKeys(): Promise<void> {
     if (keysToRemove.length) {
       await chrome.storage.local.remove(keysToRemove);
     }
-  } catch (error) {
-    logError(error);
-  }
+  } catch {}
 }
 
 /**
@@ -258,7 +242,6 @@ export async function getOffsetInfo(): Promise<{ count: number }> {
     const offsetKeys = Object.keys(result).filter(key => key.startsWith(OFFSET_STORAGE_PREFIX));
     return { count: offsetKeys.length };
   } catch (error) {
-    logError(error);
     return { count: 0 };
   }
 }
@@ -275,7 +258,6 @@ export async function clearAllOffsets(): Promise<number> {
     await chrome.storage.local.remove(offsetKeys);
     return offsetKeys.length;
   } catch (error) {
-    logError(error);
     return 0;
   }
 }

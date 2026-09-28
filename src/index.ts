@@ -1,6 +1,5 @@
 import { injectI18nCssVars, loadLocaleOverride, subscribeToLocaleChanges } from "@core/i18n";
 import { purgeExpiredKeys, saveCacheInfo } from "@core/storage";
-import { initProviders } from "@modules/lyrics/providers/shared";
 import { setupRequestSniffer } from "@modules/lyrics/requestSniffer/requestSniffer";
 import {
   listenForSettingsChanges,
@@ -17,7 +16,7 @@ import {
 } from "@modules/ui/observer";
 
 /**
- * Initializes the extension: local styles, locale, observers, settings, storage and providers.
+ * Initializes the extension: local styles, locale, observers, settings and storage.
  */
 async function modify(isDisposed: () => boolean): Promise<void> {
   await injectHeadTags();
@@ -38,7 +37,6 @@ async function modify(isDisposed: () => boolean): Promise<void> {
   lyricReloader();
   initializeLyrics();
   setupAltHoverHandler();
-  initProviders();
 }
 
 /**

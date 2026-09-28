@@ -68,7 +68,6 @@ export default function initializePlayerBridge() {
             song: title,
             artist: author,
             duration,
-            audioTrackData: player.getAudioTrack(),
             browserTime: Date.now(),
             isPlaying,
             playing: isPlaying && !isBuffering && !isSeeking && !isUiSeeking,

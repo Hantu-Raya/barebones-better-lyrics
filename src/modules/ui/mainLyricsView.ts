@@ -1,6 +1,12 @@
 import { AppState } from "@core/appState";
 import { ytmHost } from "@modules/ui/lyricsHost";
 import { createLyricsRenderer, type LyricsRenderer, type TickOptions } from "@braccato/core";
+import { setThemeSettings } from "@braccato/core/themeSettings";
+
+// Barebones keeps word-timed highlighting but not the per-letter wave decoration, which the renderer
+// enables by default. Applied before any lyrics render; nothing else sets theme settings, so this
+// is the whole configuration. (The renderer's API takes a Map.)
+setThemeSettings(new Map([["blyrics-letter-wave", "false"]]));
 
 // -- The side panel's view --------------------------
 

@@ -1,16 +1,8 @@
-import {
-  LYRICS_TAB_CLICKED_LOG,
-  LYRICS_WRAPPER_ID,
-  SONG_SWITCHED_LOG,
-  TAB_CONTENT_CLASS,
-  TAB_HEADER_CLASS,
-  TAB_RENDERER_SELECTOR,
-} from "@constants";
+import { LYRICS_WRAPPER_ID, TAB_CONTENT_CLASS, TAB_HEADER_CLASS, TAB_RENDERER_SELECTOR } from "@constants";
 import { AppState, handleModifications, type PlayerDetails, reloadLyrics } from "@core/appState";
 import { adjustLyricOffset, OFFSET_STEP, OFFSET_STEP_LARGE } from "@modules/ui/lyricsDock/offset";
 import { currentTickOptions, mainView } from "@modules/ui/mainLyricsView";
 import { getResumeScrollElement } from "@modules/ui/resumeScrollButton";
-import { logCore } from "@core/logger";
 import { cleanup, renderLoader } from "./dom";
 
 // -- Observer Storage & Init Guards --------------------------
@@ -129,7 +121,6 @@ export function lyricReloader(): void {
     tab2.addEventListener("click", () => {
       getResumeScrollElement().classList.remove("blyrics-hidden");
       if (!AppState.areLyricsLoaded) {
-        logCore(LYRICS_TAB_CLICKED_LOG);
         cleanup();
         renderLoader();
         reloadLyrics();
@@ -183,10 +174,8 @@ export function initializeLyrics(): void {
       AppState.lastVideoId = currentVideoId;
       AppState.lastVideoDetails = currentVideoDetails;
       if (!detail.song || !detail.artist) {
-        logCore("Lyrics switched: Still waiting for metadata ", detail.videoId);
         return;
       }
-      logCore(SONG_SWITCHED_LOG, detail.videoId);
 
       AppState.queueLyricInjection = true;
     }

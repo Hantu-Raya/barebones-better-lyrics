@@ -1,49 +1,15 @@
 import {
-  LYRIC_SOURCE_KEYS,
   LYRICS_CACHE_TTL_MS,
   LYRICS_NEGATIVE_CACHE_TTL_MS,
   PROVIDER_CONFIGS,
-  PROVIDER_SWITCHED_LOG,
 } from "@constants";
 import { getTransientStorage, setTransientStorage } from "@core/storage";
 import betterLyricsApi from "./betterLyricsApi";
 import lrclib from "./lrclib";
 import ytLyrics, { type YTLyricSourceResult } from "./yt";
-import { mergePreferredProviders } from "./providerList";
 import { logCore } from "@core/logger";
 /** Current version of the lyrics cache format */
 const LYRIC_CACHE_VERSION = "2.1.0";
-
-interface AudioTrackData {
-  id: string;
-  kc: {
-    name: string;
-    id: string;
-    isDefault: boolean;
-  };
-  captionTracks: {
-    languageCode: string;
-    languageName: string;
-    kind: string;
-    name: string;
-    displayName: string;
-    id: string | null;
-    j: boolean;
-    isTranslateable: boolean;
-    url: string;
-    vssId: string;
-    isDefault: boolean;
-    translationLanguage: string | null;
-    xtags: string;
-    captionId: string;
-  }[];
-  C: any;
-  xtags: string;
-  G: boolean;
-  j: any | null;
-  B: string;
-  captionsInitialState: string;
-}
 
 interface LyricSource {
   filled: boolean;
@@ -56,13 +22,8 @@ export interface LyricSourceResult {
   lyrics: Lyric[] | null;
   language?: string | null;
   source: string;
-  sourceHref: string;
   musicVideoSynced?: boolean | null;
   cacheAllowed?: boolean;
-  album?: string;
-  artist?: string;
-  song?: string;
-  duration?: number;
 }
 
 export type LyricsArray = Lyric[];
@@ -92,7 +53,6 @@ export interface ProviderParameters {
   artist: string;
   duration: number;
   videoId: string;
-  audioTrackData: AudioTrackData | null;
   album: string | null;
   sourceMap: SourceMapType;
   signal: AbortSignal;
@@ -102,43 +62,10 @@ export type SourceMapType = {
   [key in LyricSourceKey]: LyricSource;
 };
 
-const defaultPreferredProviderList: LyricSourceKey[] = [...PROVIDER_CONFIGS]
+/** Fixed source order: Better Lyrics API, then LRCLIB, then YouTube Music's own lyrics. */
+export const providerPriority: readonly LyricSourceKey[] = [...PROVIDER_CONFIGS]
   .sort((a, b) => a.priority - b.priority)
-  .map(p => p.key) as LyricSourceKey[];
-
-function isLyricSourceKey(provider: string): provider is LyricSourceKey {
-  return (LYRIC_SOURCE_KEYS as readonly string[]).includes(provider);
-}
-
-export let providerPriority: LyricSourceKey[] = [];
-
-let hasInitializedProviders = false;
-
-export function initProviders(): void {
-  if (hasInitializedProviders) {
-    return;
-  }
-  hasInitializedProviders = true;
-  const updateProvidersList = (preferredProviderList: string[] | null) => {
-    const stored = preferredProviderList ?? [...defaultPreferredProviderList];
-    const merged = mergePreferredProviders(stored, defaultPreferredProviderList);
-
-    const finalProviderList = merged.filter(isLyricSourceKey);
-
-    logCore(PROVIDER_SWITCHED_LOG, finalProviderList);
-    providerPriority = finalProviderList;
-  };
-
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "sync" && changes.preferredProviderList) {
-      updateProvidersList(changes.preferredProviderList.newValue as string[] | null);
-    }
-  });
-
-  chrome.storage.sync.get({ preferredProviderList: null }, function (items) {
-    updateProvidersList(items.preferredProviderList as string[] | null);
-  });
-}
+  .map(p => p.key as LyricSourceKey);
 
 // Source #1 fills both Better Lyrics keys from one response; source #2 is LRCLIB; the last is
 // YouTube Music's own lyrics, which only count when timed (see lyrics.ts).
@@ -227,7 +154,7 @@ export async function getLyrics(
 
   // Save result to cache for each provider
   await Promise.allSettled(
-    defaultPreferredProviderList.map(async provider => {
+    providerPriority.map(async provider => {
       await saveLyricsToCache(providerParameters, provider);
     })
   );

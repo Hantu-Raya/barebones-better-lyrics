@@ -10,37 +10,6 @@
 	.blyrics-container > div {
 		margin-inline: 4rem !important;
 	}
-	/* The album art backdrop is the side panel's decoration, so it is anchored on the page rather
-	   than on the lyrics: the floating window is always under 615px and must not paint it. The
-	   ancestor sits in :where() so the selector weighs exactly what a bare .blyrics-container:before
-	   weighs, which is what published themes override it at. */
-	:where(ytmusic-app-layout) .blyrics-container:before {
-		background: linear-gradient(to right, #030303 4rem, rgba(3, 3, 3, 0.5), #030303 96%) !important;
-		background-position: 50% !important;
-		background-size: cover !important;
-		border-radius: 1rem;
-		bottom: 0;
-		filter: blur(80px) saturate(2);
-		top: 0;
-	}
-	:where(ytmusic-app-layout) .blyrics-container:after,
-	:where(ytmusic-app-layout) .blyrics-container:before {
-		content: "";
-		left: 0;
-		position: absolute;
-		right: 0;
-		z-index: -1;
-	}
-	:where(ytmusic-app-layout) .blyrics-container:after {
-		background: radial-gradient(
-			circle at center,
-			rgba(3, 3, 3, 0.1),
-			rgba(3, 3, 3, 0.5)
-		) !important;
-		bottom: -8rem;
-		top: -2rem;
-		transform: translateX(0) translateY(0) !important;
-	}
 	#blyrics-wrapper {
 		margin-top: 0;
 	}

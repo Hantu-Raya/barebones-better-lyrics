@@ -21,6 +21,5 @@ export const warnGeneral: LogSink = createWarnSink(GENERAL_ERROR_LOG);
 export const errorCore: LogSink = createErrorSink(LOG_PREFIX);
 export const errorGeneral: LogSink = createErrorSink(GENERAL_ERROR_LOG);
 
+// The renderer host contract requires an informational sink; it stays silent.
 export const logCore: LogSink = NOOP;
-export const logContent: LogSink = NOOP;
-export const logError: LogSink = NOOP;

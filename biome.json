@@ -15,8 +15,7 @@
       "!www/.next/**/*",
       "!src/options.html",
       "!src/core/generated/**",
-      "!.all-contributorsrc",
-      "!STYLING.md"
+      "!.all-contributorsrc"
     ],
     "ignoreUnknown": true
   },
@@ -63,8 +62,7 @@
         "node_modules/**/*",
         "dist/**/*",
         "src/options.html",
-        ".all-contributorsrc",
-        "STYLING.md"
+        ".all-contributorsrc"
       ],
       "linter": {
         "enabled": false

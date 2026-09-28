@@ -34,7 +34,6 @@ export const LYRICS_LOADER_ID = "blyrics-loader" as const;
 // Duplicated as a literal in public/script.js; that file is a page-world script and cannot import.
 export const SEEK_EVENT = "blyrics-seek-to" as const;
 
-
 // API URLs and Functions
 export const TRANSLATE_LYRICS_URL = function (lang: string, text: string): string {
   return `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`;
@@ -48,37 +47,10 @@ export const PROVIDER_TIMEOUT_MS = 20_000;
 
 // Log Prefixes
 export const LOG_PREFIX = "[BetterLyrics]" as const;
-export const LOG_PREFIX_CONTENT = "[BetterLyrics:Content]" as const;
 
 // Initialization and General Logs
 export const GENERAL_ERROR_LOG = "[BetterLyrics] Error:" as const;
-
-// Lyrics Fetch and Processing Logs
-export const LYRICS_FOUND_LOG = "[BetterLyrics] Lyrics found, injecting into the page" as const;
 export const NO_LYRICS_FOUND_LOG = "[BetterLyrics] No lyrics found for the current song" as const;
-export const PROVIDER_SWITCHED_LOG = "[BetterLyrics] Switching to provider = " as const;
-
-// UI State Logs
-export const LYRICS_TAB_HIDDEN_LOG =
-  "[BetterLyrics] (Safe to ignore) Lyrics tab is hidden, skipping lyrics fetch" as const;
-export const LYRICS_TAB_CLICKED_LOG = "[BetterLyrics] Lyrics tab clicked, fetching lyrics" as const;
-export const LYRICS_WRAPPER_CREATED_LOG = "[BetterLyrics] Lyrics wrapper created" as const;
-export const FOOTER_NOT_VISIBLE_LOG =
-  "[BetterLyrics] (Safe to ignore) Footer is not visible, unable to inject source link" as const;
-export const LYRICS_TAB_NOT_DISABLED_LOG =
-  "[BetterLyrics] (Safe to ignore) Lyrics tab is not disabled, unable to enable it" as const;
-export const SONG_SWITCHED_LOG = "[BetterLyrics] Song has been switched" as const;
-export const LOADER_TRANSITION_ENDED = "[BetterLyrics] Loader Transition Ended" as const;
-
-// Feature State Logs
-export const TRANSLATION_ENABLED_LOG = "[BetterLyrics] Translation enabled, translating lyrics. Language: " as const;
-export const TRANSLATION_ERROR_LOG = "[BetterLyrics] Unable to translate lyrics due to error" as const;
-export const SYNC_DISABLED_LOG =
-  "[BetterLyrics] Syncing lyrics disabled due to all lyrics having a start time of 0" as const;
-
-// Error and Storage Logs
-export const SERVER_ERROR_LOG = "[BetterLyrics] Server Error:" as const;
-export const STORAGE_TRANSIENT_SET_LOG = "[BetterLyrics] Set transient storage for key: " as const;
 export const MUSIC_NOTES = "♪𝅘𝅥𝅮𝅘𝅥𝅯𝅘𝅥𝅰𝅘𝅥𝅱𝅘𝅥𝅲" as const;
 
 export const LYRICS_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;

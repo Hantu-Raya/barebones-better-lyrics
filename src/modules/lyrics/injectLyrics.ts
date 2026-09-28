@@ -1,11 +1,4 @@
-import {
-  LYRICS_FOUND_LOG,
-  LYRICS_TAB_NOT_DISABLED_LOG,
-  NO_LYRICS_FOUND_LOG,
-  SYNC_DISABLED_LOG,
-  TAB_HEADER_CLASS,
-  TRANSLATION_ENABLED_LOG,
-} from "@constants";
+import { NO_LYRICS_FOUND_LOG, TAB_HEADER_CLASS } from "@constants";
 import { AppState } from "@core/appState";
 import { t } from "@core/i18n";
 import { applySegmentMapToLyrics, type LyricSourceResultWithMeta } from "@modules/lyrics/lyrics";
@@ -16,7 +9,6 @@ import { disableNativeLyricsFocus } from "@modules/ui/nativeLyricsFocus";
 import { injectTranslation, type LineData } from "@braccato/core";
 import { containsNonLatin, detectNonLatinLanguage } from "@braccato/core/text";
 import { langCodesMatch, languageMatchesAny } from "@utils";
-import { logCore } from "@core/logger";
 
 export type { LineData };
 
@@ -86,14 +78,10 @@ export function processLyrics(
     throw new Error(NO_LYRICS_FOUND_LOG);
   }
 
-  logCore(LYRICS_FOUND_LOG);
-
   // The previous song's container, not the one this injection builds: injectLyrics creates that
   // one later. cleanup() drops both this reference and the element together, so a null here means
   // there is nothing on screen to clear.
-  if (!mainView.clearOnScreenLyrics()) {
-    logCore(LYRICS_TAB_NOT_DISABLED_LOG);
-  }
+  mainView.clearOnScreenLyrics();
 
   injectLyrics(doc, data, keepLoaderVisible, signal);
 }
@@ -108,7 +96,6 @@ export function processLyrics(
  * @param signal - AbortSignal to cancel async operations
  * @param data.lyrics - Array of lyric lines with timing
  * @param [data.source] - Source attribution for lyrics
- * @param [data.sourceHref] - URL for source link
  */
 function injectLyrics(
   doc: Document,
@@ -126,9 +113,6 @@ function injectLyrics(
   const lyricsWrapper = createLyricsWrapper();
   lyricsWrapper.removeAttribute("is-empty");
 
-  if (AppState.isTranslateEnabled) {
-    logCore(TRANSLATION_ENABLED_LOG, AppState.translationLanguage);
-  }
 
   const allZero = lyrics.every(item => item.startTimeMs === 0);
   const noLyrics = lyrics[0].words === t("lyrics_notFound");
@@ -163,16 +147,7 @@ function injectLyrics(
   AppState.lyricData = lyricsData;
 
   if (!noLyrics) {
-    addFooter(
-      data.source,
-      data.sourceHref,
-      data.song,
-      data.artist,
-      data.album,
-      data.duration,
-      data.providerKey,
-      data.videoId
-    );
+    addFooter(data.source, data.providerKey);
   } else {
     showNoLyricsState();
   }
@@ -185,9 +160,6 @@ function injectLyrics(
 
   AppState.areLyricsTicking = true;
   mainView.relayout();
-  if (allZero) {
-    logCore(SYNC_DISABLED_LOG);
-  }
 
   AppState.areLyricsLoaded = true;
 }
@@ -275,7 +247,6 @@ async function processBatchTranslations(
         if (!sourceLanguage && response.detectedLanguage) {
           sourceLanguage = response.detectedLanguage;
           updateLyricLanguage(sourceLanguage);
-          logCore("Determined language via translation batch: " + sourceLanguage);
         }
 
         if (isTranslationDisabledForLang(sourceLanguage || "")) return;

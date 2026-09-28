@@ -1,8 +1,8 @@
-/* The extension loads these families from Google Fonts, and published themes select on the stack by
-   name, so it stays on this side of the renderer boundary. */
-:root,
+/* The extension loads these families from Google Fonts. Declared on lyric text only, never on the
+   host page's :root. */
 .blyrics--line,
-.blyrics--translated {
+.blyrics--translated,
+.blyrics--romanized {
 	--noto-sans-cjk: "Noto Sans HK", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", "Noto Sans TC";
 	--noto-sans-universal:
 		"Noto Sans", var(--noto-sans-cjk), "Noto Sans Arabic", "Noto Sans Armenian",

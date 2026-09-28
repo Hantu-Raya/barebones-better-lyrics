@@ -3,7 +3,7 @@
  * Manages lyrics fetching, caching, processing, and rendering.
  */
 
-import { LYRICS_TAB_HIDDEN_LOG, SEEK_EVENT, SERVER_ERROR_LOG, TAB_HEADER_CLASS } from "@constants";
+import { SEEK_EVENT, TAB_HEADER_CLASS } from "@constants";
 import { AppState, type PlayerDetails } from "@core/appState";
 import { t } from "@core/i18n";
 import { type LineData, type LyricsData, processLyrics } from "@modules/lyrics/injectLyrics";
@@ -16,10 +16,8 @@ import { getSongAlbum, getSongMetadata, type SegmentMap } from "./requestSniffer
 import { clearCache as clearTranslationCache } from "./translation";
 import { mainView } from "@modules/ui/mainLyricsView";
 import { resetPlaybackClock, resumeAllAutoscroll } from "@braccato/core";
-import { logCore } from "@core/logger";
 
 export function seekPlayer(timeS: number): void {
-  logCore(`Seeking to ${timeS.toFixed(2)}s`);
   document.dispatchEvent(new CustomEvent(SEEK_EVENT, { detail: timeS }));
   resumeAllAutoscroll();
 }
@@ -34,11 +32,6 @@ function normalizeArtist(artist: string): string {
 }
 
 export type LyricSourceResultWithMeta = LyricSourceResult & {
-  song: string;
-  artist: string;
-  album: string;
-  duration: number;
-  videoId: string;
   segmentMap: SegmentMap | null;
   providerKey?: string;
 };
@@ -139,13 +132,9 @@ async function completeSourceProbe(providerParameters: ProviderParameters, signa
       if (providerParameters.sourceMap[provider].filled) continue;
       try {
         await getLyrics(providerParameters, provider);
-      } catch (err) {
-        logCore(err);
-      }
+      } catch {}
     }
-  } catch (err) {
-    logCore(err);
-  }
+  } catch {}
   if (signal.aborted) return;
   if (recordAvailableProviders(providerParameters.sourceMap)) {
     refreshDockSources();
@@ -164,11 +153,9 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
   let artist = detail.artist;
   let videoId = detail.videoId;
   let duration = Number(detail.duration);
-  const audioTrackData = detail.audioTrackData;
   const isMusicVideo = detail.contentRect.width !== 0 && detail.contentRect.height !== 0;
 
   if (!videoId) {
-    logCore(SERVER_ERROR_LOG, "Invalid video id");
     return;
   }
 
@@ -192,15 +179,12 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       applySegmentMapToLyrics(AppState.lyricData, mainView.lines, segmentMap);
       AppState.suppressZeroTime = Date.now() + 5000;
       AppState.areLyricsTicking = true; // Keep lyrics ticking while new lyrics are fetched.
-      logCore("Switching between audio/video: Skipping Loader", segmentMap);
     } else if (isSoftReload) {
       // Same-song reload (provider switch or translation toggle): keep the
       // current lyrics on screen and swap them in once the new ones are ready, no loader.
       AppState.suppressZeroTime = Date.now() + 5000;
       AppState.areLyricsTicking = true;
-      logCore("Soft reload: keeping current lyrics, skipping loader");
     } else {
-      logCore("Not Switching between audio/video", isAVSwitch, segmentMap);
       renderLoader();
       shouldCleanupLoader = true;
       clearTranslationCache();
@@ -217,7 +201,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       artist = matchingSong.artist || artist;
 
       if (isMusicVideo && matchingSong.counterpartVideoId && matchingSong.segmentMap) {
-        logCore("Switching VideoId to Audio Id");
         videoId = matchingSong.counterpartVideoId;
       }
     }
@@ -227,7 +210,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       AppState.areLyricsLoaded = false;
       AppState.areLyricsTicking = false;
       AppState.lyricInjectionFailed = true;
-      logCore(LYRICS_TAB_HIDDEN_LOG);
       return;
     }
 
@@ -240,7 +222,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
 
     // Check for empty strings after trimming
     if (!song || !artist) {
-      logCore(SERVER_ERROR_LOG, "Empty song or artist name");
       return;
     }
 
@@ -255,7 +236,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       artist,
       duration,
       videoId,
-      audioTrackData,
       album,
       sourceMap,
       signal,
@@ -301,9 +281,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
           selectedProvider = provider;
           break;
         }
-      } catch (err) {
-        logCore(err);
-      }
+      } catch {}
     }
 
     if (!lyrics) {
@@ -316,7 +294,6 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
           },
         ],
         source: "Unknown",
-        sourceHref: "",
         musicVideoSynced: false,
         cacheAllowed: false,
       };
@@ -330,14 +307,7 @@ export async function createLyrics(detail: PlayerDetails, signal: AbortSignal): 
       segmentMap = null; // The timing matches, we don't need to apply a segment map!
     }
 
-    // Preserve song and artist information in the lyrics data for the "Add Lyrics" button
-
     let lyricsWithMeta: LyricSourceResultWithMeta = {
-      song: providerParameters.song,
-      artist: providerParameters.artist,
-      album: providerParameters.album || "",
-      duration: providerParameters.duration,
-      videoId: providerParameters.videoId,
       segmentMap,
       providerKey: selectedProvider,
       ...lyrics,

@@ -1,5 +1,4 @@
-import { TRANSLATE_LYRICS_URL, TRANSLATION_ERROR_LOG } from "@constants";
-import { logCore } from "@core/logger";
+import { TRANSLATE_LYRICS_URL } from "@constants";
 
 interface TranslationResult {
   originalLanguage: string;
@@ -67,7 +66,6 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
     // A single line that cannot fit the URL budget on its own is skipped, not sent: Google would
     // reject or truncate it. The line stays untranslated rather than silently mangled.
     if (baseUrl.length + itemEncoded.length > MAX_URL_LENGTH) {
-      logCore(TRANSLATION_ERROR_LOG, `Skipping a line whose encoded length (${itemEncoded.length}) exceeds the URL budget`);
       continue;
     }
     const addedLength = (currentChunk.length > 0 ? separatorEncoded.length : 0) + itemEncoded.length;
@@ -114,7 +112,6 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
           if (singleNewlineSplit.length === chunk.length) {
             translatedLines = singleNewlineSplit;
           } else if (translatedLines.length === 1 && chunk.length > 1) {
-            logCore(TRANSLATION_ERROR_LOG, `Batch translation failed to split: expected ${chunk.length} lines, got 1.`);
             translatedLines = [];
           }
         }
@@ -128,10 +125,8 @@ export async function translateBatch(request: BatchRequest): Promise<BatchTransl
           results[item.index] = result;
         }
       });
-    } catch (error) {
-      if ((error as Error).name !== "AbortError") {
-        logCore(TRANSLATION_ERROR_LOG, error);
-      }
+    } catch {
+      // Aborted or failed batches leave these lines untranslated.
     }
   }
 

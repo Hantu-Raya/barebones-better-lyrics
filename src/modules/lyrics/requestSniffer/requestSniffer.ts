@@ -1,6 +1,5 @@
 import type { LongBylineText, NextResponse, ThumbnailElement } from "@modules/lyrics/requestSniffer/NextResponse";
 import { parseTime } from "./utils";
-import { logCore } from "@core/logger";
 
 interface Segment {
   primaryVideoStartTimeMilliseconds: number;
@@ -158,7 +157,6 @@ export function getLyrics(videoId: string, maxRetries = 250, signal?: AbortSigna
       if (checkCount > maxRetries) {
         clearInterval(checkInterval);
         signal?.removeEventListener("abort", abortHandler);
-        logCore("Failed to sniff lyrics");
         resolve({ hasLyrics: false, lyrics: "", sourceText: "" });
         return;
       }
@@ -212,7 +210,6 @@ export function getSongMetadata(
       if (checkCount > maxCheckCount) {
         clearInterval(checkInterval);
         signal?.removeEventListener("abort", abortHandler);
-        logCore("Failed to find Segment Map for video");
         resolve(null);
         return;
       }
@@ -257,7 +254,6 @@ export async function getSongAlbum(videoId: string, signal?: AbortSignal): Promi
     }
     await new Promise(resolve => setTimeout(resolve, 20));
   }
-  logCore("Song album information didn't come in time for: ", videoId);
 }
 
 export function setupRequestSniffer(): () => void {
@@ -281,12 +277,6 @@ export function setupRequestSniffer(): () => void {
           // put it in for some reason
           responseJson.onResponseReceivedEndpoints?.[0]?.queueUpdateCommand?.inlineContents?.playlistPanelRenderer
             ?.contents;
-
-        if (!playlistPanelRendererContents) {
-          logCore("PlaylistPanelRendererContents not found.");
-        } else {
-          logCore("PlaylistPanelRendererContents found in onResponseReceivedEndpoints!");
-        }
       }
 
       if (playlistPanelRendererContents) {

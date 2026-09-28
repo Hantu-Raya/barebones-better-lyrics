@@ -1,5 +1,5 @@
 import { BETTER_LYRICS_API_URL, PROVIDER_TIMEOUT_MS } from "@constants";
-import { logCore, warnCore } from "@core/logger";
+import { warnCore } from "@core/logger";
 import { fillTtml } from "./ttmlSource";
 import { type ProviderParameters, parseRetryAfterMs } from "./shared";
 
@@ -30,7 +30,6 @@ export default async function betterLyricsApi(p: ProviderParameters): Promise<vo
   attempted.add(p.sourceMap);
 
   if (Date.now() < backoffUntil) {
-    logCore("Better Lyrics API backing off after 429; skipping");
     return;
   }
 

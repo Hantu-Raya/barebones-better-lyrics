@@ -1,5 +1,5 @@
 import { LRCLIB_API_URL, LRCLIB_CLIENT_HEADER, PROVIDER_TIMEOUT_MS } from "@constants";
-import { logCore, warnCore } from "@core/logger";
+import { warnCore } from "@core/logger";
 import { parseLRC } from "@braccato/parsers";
 import { type ProviderParameters, parseRetryAfterMs } from "./shared";
 
@@ -20,7 +20,6 @@ function markMiss(p: ProviderParameters): void {
  */
 export default async function lrclib(p: ProviderParameters): Promise<void> {
   if (Date.now() < backoffUntil) {
-    logCore("LRCLIB backing off after 429; skipping");
     return;
   }
 
@@ -75,7 +74,7 @@ export default async function lrclib(p: ProviderParameters): Promise<void> {
   const lyrics = parseLRC(synced, p.duration * 1000);
   p.sourceMap[KEY].lyricSourceResult =
     lyrics.length > 0
-      ? { lyrics, source: "LRCLIB", sourceHref: "https://lrclib.net", musicVideoSynced: false, cacheAllowed: true }
+      ? { lyrics, source: "LRCLIB", musicVideoSynced: false, cacheAllowed: true }
       : null;
   p.sourceMap[KEY].filled = true;
 }

@@ -3,14 +3,11 @@ import {
   DOCK_CLASS,
   DOCK_DEFAULT_POSITION,
   FOOTER_CLASS,
-  FOOTER_NOT_VISIBLE_LOG,
   LINE_CLASS,
-  LOADER_TRANSITION_ENDED,
   LYRICS_AD_OVERLAY_ID,
   LYRICS_CLASS,
   LYRICS_LOADER_ID,
   LYRICS_PAGE_TYPE,
-  LYRICS_WRAPPER_CREATED_LOG,
   LYRICS_WRAPPER_ID,
   PLAYER_BAR_SELECTOR,
   PROVIDER_CONFIGS,
@@ -29,7 +26,6 @@ import { buildControlsSegment, buildSourceSlot, closeSourceMenu } from "./lyrics
 import { parseSvgString, syncTypeColors, syncTypeIcons } from "./lyricsDock/icons";
 import { loadSavedOffset } from "./lyricsDock/offset";
 import { scrollEventHandler } from "./observer";
-import { logCore } from "@core/logger";
 import { restoreNativeLyricsFocus } from "./nativeLyricsFocus";
 
 const providerDisplayInfo: Record<string, { name: string; syncType: SyncType }> = Object.fromEntries(
@@ -100,31 +96,16 @@ export function createLyricsWrapper(): HTMLElement {
     }
   });
 
-  logCore(LYRICS_WRAPPER_CREATED_LOG);
   return wrapper;
 }
 
 /**
- * Adds a footer with source attribution and action buttons to the lyrics container.
+ * Adds a footer with source attribution to the lyrics container.
  *
- * @param source - Source name for attribution
- * @param sourceHref - URL for the source link
- * @param song - Song title
- * @param artist - Artist name
- * @param album - Album name
- * @param duration - Song duration in seconds
+ * @param source - Source name, shown when the provider key has no display info
  * @param providerKey - Provider key for display name and sync type lookup
  */
-export function addFooter(
-  source: string,
-  sourceHref: string,
-  song: string,
-  artist: string,
-  album: string,
-  duration: number,
-  providerKey?: string,
-  videoId?: string
-): void {
+export function addFooter(source: string, providerKey?: string): void {
   if (document.getElementsByClassName(FOOTER_CLASS).length !== 0) {
     document.getElementsByClassName(FOOTER_CLASS)[0].remove();
   }
@@ -485,9 +466,7 @@ function createFooter(): void {
 
     footer.appendChild(footerContainer);
     footer.removeAttribute("is-empty");
-  } catch (_err) {
-    logCore(FOOTER_NOT_VISIBLE_LOG);
-  }
+  } catch {}
 }
 
 let loaderStateTimeout: number | undefined;
@@ -542,9 +521,7 @@ export function renderLoader(small = false): void {
     } else {
       setLoaderState("full-loader", t("lyrics_searching"));
     }
-  } catch (err) {
-    logCore(err);
-  }
+  } catch {}
 }
 
 /**
@@ -568,7 +545,6 @@ export function flushLoader(showNoSyncAvailable = false): void {
       AppState.loaderAnimationEndTimeout = window.setTimeout(() => {
         setLoaderState("hidden");
         loaderWrapper.hidden = true;
-        logCore(LOADER_TRANSITION_ENDED);
       }, duration * 2); // Make longer than css duration
     };
 
@@ -583,9 +559,7 @@ export function flushLoader(showNoSyncAvailable = false): void {
       // simultaneously with the loader animating out
       performExit(loaderWrapper.getAttribute("state") === "showing-message");
     }
-  } catch (err) {
-    logCore(err);
-  }
+  } catch {}
 }
 
 /**
@@ -600,9 +574,7 @@ export function isLoaderActive(): boolean {
       const state = loaderWrapper.getAttribute("state");
       return state !== "hidden" && state !== null;
     }
-  } catch (err) {
-    logCore(err);
-  }
+  } catch {}
   return false;
 }
 
@@ -699,9 +671,7 @@ function clearLyrics(): void {
     if (lyricsWrapper) {
       lyricsWrapper.replaceChildren();
     }
-  } catch (err) {
-    logCore(err);
-  }
+  } catch {}
 }
 
 /**
